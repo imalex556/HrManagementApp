@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>View Applications for Job</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            background-color: #4cae4c;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .application-listing {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .application-details {
+            margin-top: 10px;
+        }
+
+        .application-details p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .cv-link, .details-link, .shortlist-link, .reject-link {
+            background-color: #5cb85c;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .cv-link:hover, .details-link:hover, .shortlist-link:hover {
+            background-color: #4cae4c;
+        }
+
+        .reject-link {
+            background-color: #d9534f;
+        }
+
+        .reject-link:hover {
+            background-color: #c9302c;
+        }
+
+        /* Dropdown Menu Styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropbtn {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Applications for Job: <span th:text="${jobTitle}"></span></h2>
+        <div th:if="${applications}">
+            <div th:each="applicant, iterStat : ${applications}" class="application-listing">
+                <div class="application-details">
+                    <p><strong>Rank:</strong> <span th:text="${iterStat.index + 1}"></span></p>
+                    <p><strong>Name:</strong> <span th:text="${applicant.get('name')}"></span></p>
+                    <p><strong>Email:</strong> <span th:text="${applicant.get('email')}"></span></p>
+                    <a th:href="@{/downloadCv(applicationId=${applicant.get('applicationId')})}" class="cv-link">Download CV</a>
+                    <a th:href="@{/viewApplicationDetails(applicationId=${applicant.get('applicationId')}, jobId=${jobId})}" class="details-link">View Details</a>
+                    <form th:action="@{/shortlistApplication}" method="post" style="display:inline;">
+                        <input type="hidden" name="applicationId" th:value="${applicant.get('applicationId')}" />
+                        <input type="hidden" name="jobId" th:value="${jobId}" />
+                        <button type="submit" class="shortlist-link">Shortlist</button>
+                    </form>
+                    <form th:action="@{/rejectApplication}" method="post" style="display:inline;">
+                        <input type="hidden" name="applicationId" th:value="${applicant.get('applicationId')}" />
+                        <input type="hidden" name="jobId" th:value="${jobId}" />
+                        <button type="submit" class="reject-link">Reject</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

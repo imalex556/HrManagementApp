@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Candidate Tracking Dashboard</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            background-color: #4cae4c;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .job-listing {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .job-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #5cb85c;
+        }
+
+        .candidate-details {
+            margin-top: 10px;
+        }
+
+        .candidate-details p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .status {
+            font-weight: bold;
+            color: #5cb85c;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            color: #5cb85c;
+            padding: 8px 16px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #4cae4c;
+            color: white;
+        }
+
+        .pagination .active {
+            background-color: #5cb85c;
+            color: white;
+            border-radius: 5px;
+        }
+
+        /* Dropdown Menu Styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropbtn {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Candidate Tracking Dashboard</h2>
+        <form th:action="@{/candidateTrackingDashboard}" method="get">
+            <label for="jobSelect">Select Job:</label>
+            <select id="jobSelect" name="selectedJob">
+                <option value="">All Jobs</option>
+                <option th:each="job : ${jobPostings}" th:value="${job.getString('title')}" th:text="${job.getString('title')}"></option>
+            </select>
+            <button type="submit">Filter</button>
+        </form>
+        <div th:if="${candidateStatuses}">
+            <div th:each="entry : ${candidateStatuses}">
+                <div class="job-listing">
+                    <div class="job-title" th:text="${entry.key}"></div>
+                    <div class="candidate-details">
+                        <p><strong>Name:</strong> <span th:text="${entry.value.get('name')}"></span></p>
+                        <p><strong>Email:</strong> <span th:text="${entry.value.get('email')}"></span></p>
+                        <p><strong>Status:</strong> <span class="status" th:text="${entry.value.get('status')}"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pagination">
+            <a th:href="@{/candidateTrackingDashboard(page=${currentPage - 1}, size=${size}, selectedJob=${selectedJob})}" th:if="${currentPage > 0}">&laquo; Previous</a>
+            <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:href="@{/candidateTrackingDashboard(page=${i}, size=${size}, selectedJob=${selectedJob})}" th:classappend="${i == currentPage} ? 'active'" th:text="${i + 1}"></a>
+            </span>
+            <a th:href="@{/candidateTrackingDashboard(page=${currentPage + 1}, size=${size}, selectedJob=${selectedJob})}" th:if="${currentPage < totalPages - 1}">Next &raquo;</a>
+        </div>
+    </div>
+</body>
+</html>
