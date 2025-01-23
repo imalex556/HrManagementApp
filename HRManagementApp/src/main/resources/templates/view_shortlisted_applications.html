@@ -56,7 +56,7 @@
             color: #555;
         }
 
-        .cv-link, .details-link, .reject-link {
+        .cv-link, .details-link, .reject-link, .next-stage-link {
             background-color: #5cb85c;
             color: #fff;
             padding: 10px;
@@ -69,7 +69,7 @@
             text-align: center;
         }
 
-        .cv-link:hover, .details-link:hover {
+        .cv-link:hover, .details-link:hover, .next-stage-link:hover {
             background-color: #4cae4c;
         }
 
@@ -140,6 +140,11 @@
                         <input type="hidden" name="applicationId" th:value="${applicant.get('applicationId')}" />
                         <input type="hidden" name="jobId" th:value="${jobId}" />
                         <button type="submit" class="reject-link">Reject</button>
+                    </form>
+                    <form th:action="@{/moveToNextStage}" method="post" style="display:inline;">
+                        <input type="hidden" name="applicationId" th:value="${applicant.get('applicationId')}" />
+                        <input type="hidden" name="jobId" th:value="${jobId}" />
+                        <button type="submit" class="next-stage-link">Move to Next Stage</button>
                     </form>
                 </div>
             </div>

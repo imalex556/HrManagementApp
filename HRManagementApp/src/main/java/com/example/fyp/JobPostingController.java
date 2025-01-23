@@ -491,4 +491,35 @@ public class JobPostingController {
         model.addAttribute("selectedJob", selectedJob);
         return "candidate_tracking_dashboard";
     }
+    
+    @PostMapping("/moveToNextStage")
+    public String moveToNextStage(@RequestParam String applicationId, @RequestParam String jobId, Model model) {
+        try {
+            DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+            if (applicationSnapshot.exists()) {
+                String userEmail = applicationSnapshot.getString("email");
+                String jobTitle = firestore.collection("jobPostings").document(jobId).get().get().getString("title");
+
+                // Update application status
+                Map<String, Object> applicationData = applicationSnapshot.getData();
+                applicationData.put("status", "Personality Test");
+                firestore.collection("applications").document(applicationId).set(applicationData);
+
+                // Add a notification for the user
+                Map<String, Object> notificationData = new HashMap<>();
+                notificationData.put("email", userEmail);
+                notificationData.put("message", "Congratulations! You have been moved to the next stage for the job '" + jobTitle + "'. Please complete the personality test.");
+                notificationData.put("timestamp", System.currentTimeMillis());
+                firestore.collection("notifications").add(notificationData);
+
+                model.addAttribute("message", "Candidate moved to the next stage successfully!");
+            } else {
+                model.addAttribute("error", "Application not found.");
+            }
+        } catch (Exception e) {
+            model.addAttribute("error", "An error occurred while moving the candidate to the next stage. Please try again.");
+            e.printStackTrace();
+        }
+        return "redirect:/viewShortlistedApplications?jobId=" + jobId;
+    }
 }

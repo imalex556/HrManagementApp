@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Welcome User</title>
+  <title>Application Progress</title>
   <style>
     body {
       font-family: sans-serif;
@@ -34,33 +34,53 @@
       padding: 40px;
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      width: 400px;
+      width: 600px;
       margin: 50px auto;
     }
 
     h2 {
       color: #333;
       margin-bottom: 20px;
+      text-align: center;
     }
 
-    .link-group {
-      margin-top: 20px;
-    }
-
-    .link-group a {
-      display: block;
-      background-color: #5cb85c;
-      color: #fff;
-      padding: 10px;
+    .application-listing {
+      background-color: #fff;
+      margin-bottom: 20px;
+      padding: 20px;
       border-radius: 5px;
-      text-decoration: none;
-      margin-bottom: 10px;
-      transition: background-color 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    .link-group a:hover {
-      background-color: #4cae4c;
+    .application-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #5cb85c;
+    }
+
+    .application-details {
+      margin-top: 10px;
+    }
+
+    .application-details p {
+      margin: 5px 0;
+      color: #555;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    .status.under-review {
+      color: orange;
+    }
+
+    .status.next-stage {
+      color: green;
+    }
+
+    .status.rejected {
+      color: red;
     }
 
     .notification-icon {
@@ -78,7 +98,6 @@
       color: white;
     }
 
-    /* Dropdown Menu Styles */
     .dropdown {
       position: relative;
       display: inline-block;
@@ -112,6 +131,21 @@
     .dropdown:hover .dropdown-content {
       display: block;
     }
+
+    .take-test-button {
+      background-color: #5cb85c;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 10px;
+    }
+
+    .take-test-button:hover {
+      background-color: #4cae4c;
+    }
   </style>
 </head>
 <body>
@@ -123,19 +157,27 @@
         <a th:href="@{/profile}">Profile</a>
         <a th:href="@{/notifications}" class="notification-icon">
           Notifications
-          <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+          <span th:if="${notifications != null and #lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
         </a>
-		<a th:href="@{/}">Logout</a>
-        
+        <a th:href="@{/}">Logout</a>
       </div>
     </div>
   </div>
   <div class="container">
-    <h2>Welcome User</h2>
-    <p>What would you like to do?</p>
-    <div class="link-group">
-      <a th:href="@{/viewJobsUser}">View Job Openings</a>
-	  <a th:href="@{/applicationProgress}">Track Application Progress</a>
+    <h2>Application Progress</h2>
+    <div th:if="${applications}">
+      <div th:each="app : ${applications}" class="application-listing">
+        <div class="application-title" th:text="${app.get('jobTitle')}"></div>
+        <div class="application-details">
+          <p><strong>Company:</strong> <span th:text="${app.get('companyName')}"></span></p>
+          <p><strong>Status:</strong> <span th:text="${app.get('status')}" th:classappend="${app.get('statusClass')}"></span></p>
+          <div th:if="${app.get('status') == 'Next Stage: Personality Test'}">
+            <form th:action="@{/takePersonalityTest}" method="get">
+              <button type="submit" class="take-test-button">Take Personality Test</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </body>
