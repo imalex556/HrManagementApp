@@ -9,7 +9,6 @@
             margin: 0;
             padding: 0;
         }
-
         .navbar {
             background-color: #5cb85c;
             padding: 10px;
@@ -17,28 +16,23 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .navbar a {
             color: #fff;
             text-decoration: none;
             padding: 10px;
             transition: background-color 0.3s ease;
         }
-
         .navbar a:hover {
             background-color: #4cae4c;
         }
-
         .container {
             padding: 20px;
         }
-
         h2 {
             text-align: center;
             margin-bottom: 20px;
             color: #333;
         }
-
         .job-listing {
             background-color: #fff;
             margin-bottom: 20px;
@@ -46,58 +40,46 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
         .job-title {
             font-size: 1.2em;
             font-weight: bold;
             color: #5cb85c;
         }
-
         .candidate-details {
             margin-top: 10px;
         }
-
         .candidate-details p {
             margin: 5px 0;
             color: #555;
         }
-
         .status {
             font-weight: bold;
             color: #5cb85c;
         }
-
-        /* Pagination Styles */
         .pagination {
             display: flex;
             justify-content: center;
             margin-top: 20px;
         }
-
         .pagination a {
             color: #5cb85c;
             padding: 8px 16px;
             text-decoration: none;
             transition: background-color 0.3s ease;
         }
-
         .pagination a:hover {
             background-color: #4cae4c;
             color: white;
         }
-
         .pagination .active {
             background-color: #5cb85c;
             color: white;
             border-radius: 5px;
         }
-
-        /* Dropdown Menu Styles */
         .dropdown {
             position: relative;
             display: inline-block;
         }
-
         .dropbtn {
             background-color: #5cb85c;
             color: white;
@@ -105,7 +87,6 @@
             border: none;
             cursor: pointer;
         }
-
         .dropdown-content {
             display: none;
             position: absolute;
@@ -114,14 +95,12 @@
             box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
             z-index: 1;
         }
-
         .dropdown-content a {
             color: black;
             padding: 12px 16px;
             text-decoration: none;
             display: block;
         }
-
         .dropdown:hover .dropdown-content {
             display: block;
         }
@@ -156,6 +135,7 @@
                         <p><strong>Name:</strong> <span th:text="${entry.value.get('name')}"></span></p>
                         <p><strong>Email:</strong> <span th:text="${entry.value.get('email')}"></span></p>
                         <p><strong>Status:</strong> <span class="status" th:text="${entry.value.get('status')}"></span></p>
+                        <p th:if="${entry.value.get('personalityTestResult')}"><strong>Personality Test Result:</strong> <span th:text="${entry.value.get('personalityTestResult')}"></span></p>
                     </div>
                 </div>
             </div>

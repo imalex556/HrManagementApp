@@ -3,6 +3,12 @@ package com.example.fyp;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.firebase.cloud.FirestoreClient;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.knowm.xchart.BitmapEncoder;
@@ -12,7 +18,9 @@ import org.knowm.xchart.PieChartBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +29,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -30,13 +41,7 @@ import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,6 +54,12 @@ public class JobPostingController {
 
     @Autowired
     private Firestore firestore;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    private static final String SENTINO_API_URL = "https://api.sentino.org";
+    private static final String SENTINO_API_TOKEN = "4bfbc08bf349c7f501db8405f5150cb65df3fefe";
 
     @GetMapping("/createJobPosting")
     public String showJobPostingForm() {
@@ -137,7 +148,7 @@ public class JobPostingController {
             // Encode the CV file to Base64
             String encodedCv = encodeFileToBase64(cv);
 
-            // Save the application details along with the encoded CV
+            // Save the application details along with the encoded Cv
             String applicationId = UUID.randomUUID().toString();
             Map<String, Object> applicationData = new HashMap<>();
             applicationData.put("applicationId", applicationId);
@@ -346,7 +357,7 @@ public class JobPostingController {
 
         BitmapEncoder.saveBitmap(chart, outputStream, BitmapFormat.PNG);
     }
-    
+
     @PostMapping("/shortlistApplication")
     public String shortlistApplication(@RequestParam String applicationId, @RequestParam String jobId, Model model) {
         try {
@@ -418,7 +429,7 @@ public class JobPostingController {
             return "view_applications";
         }
     }
-   
+
     @GetMapping("/selectJobForShortlistedApplications")
     public String selectJobForShortlistedApplications(Model model) throws ExecutionException, InterruptedException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -432,7 +443,7 @@ public class JobPostingController {
         model.addAttribute("jobPostings", jobPostings);
         return "select_job_for_shortlisted_applications";
     }
-    
+
     @GetMapping("/candidateTrackingDashboard")
     public String candidateTrackingDashboard(
             @RequestParam(defaultValue = "0") int page,
@@ -491,7 +502,7 @@ public class JobPostingController {
         model.addAttribute("selectedJob", selectedJob);
         return "candidate_tracking_dashboard";
     }
-    
+
     @PostMapping("/moveToNextStage")
     public String moveToNextStage(@RequestParam String applicationId, @RequestParam String jobId, Model model) {
         try {
@@ -521,5 +532,209 @@ public class JobPostingController {
             e.printStackTrace();
         }
         return "redirect:/viewShortlistedApplications?jobId=" + jobId;
+    }
+
+    // Sentino API Integration Methods
+
+    @GetMapping("/takePersonalityTest/neo")
+    public String takePersonalityTest(Model model) {
+        // Sentino API endpoint and key
+        String sentinoApiUrl = SENTINO_API_URL + "/api/items/neo";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<String> responseEntity = restTemplate.exchange(sentinoApiUrl, HttpMethod.GET, requestEntity, String.class);
+            String responseBody = responseEntity.getBody();
+            List<String> questions = SentinoUtils.processSentinoQuestionsResponse(responseBody);
+            // Limit to 20 questions
+            if (questions.size() > 20) {
+                questions = questions.subList(0, 20);
+            }
+            model.addAttribute("questions", questions);
+        } catch (HttpClientErrorException e) {
+            model.addAttribute("error", "Failed to fetch items from Sentino API. Please try again later.");
+        }
+        return "personality_test";
+    }
+
+    private List<String> processSentinoQuestionsResponse(String responseBody) {
+        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+        List<String> questions = new ArrayList<>();
+        if (jsonObject.has("items")) {
+            JsonArray itemsArray = jsonObject.getAsJsonArray("items");
+            for (JsonElement itemElement : itemsArray) {
+                questions.add(itemElement.getAsString());
+            }
+        }
+        return questions;
+    }
+
+    @PostMapping("/submitPersonalityTest")
+    public String submitPersonalityTest(@RequestParam Map<String, String> answers, Model model) throws InterruptedException, ExecutionException {
+        // Translate responses to scores
+        Map<String, Integer> scoredAnswers = new HashMap<>();
+        for (Map.Entry<String, String> entry : answers.entrySet()) {
+            String response = entry.getValue().toLowerCase();
+            int score;
+            switch (response) {
+                case "strongly agree":
+                case "completely agree":
+                case "exactly":
+                case "absolutely":
+                    score = 3;
+                    break;
+                case "agree":
+                case "yes":
+                case "sure":
+                case "agreed":
+                case "indeed":
+                    score = 2;
+                    break;
+                case "slightly agree":
+                case "guess so":
+                case "maybe":
+                case "i suppose so":
+                    score = 1;
+                    break;
+                case "neutral":
+                case "neither":
+                case "whatever":
+                case "i don’t know":
+                    score = 0;
+                    break;
+                case "slightly disagree":
+                case "not really":
+                case "not sure":
+                    score = -1;
+                    break;
+                case "disagree":
+                case "no":
+                case "i disagree":
+                case "i don’t think so":
+                    score = -2;
+                    break;
+                case "strongly disagree":
+                case "no way":
+                case "totally disagree":
+                case "absolutely not":
+                    score = -3;
+                    break;
+                default:
+                    score = 0; // Default to neutral if response is unrecognized
+            }
+            scoredAnswers.put(entry.getKey(), score);
+        }
+
+        String answersJson = new Gson().toJson(scoredAnswers);
+        String sentinoApiUrl = SENTINO_API_URL + "/v1/questionnaires/submit";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + SENTINO_API_TOKEN);
+        HttpEntity<String> requestEntity = new HttpEntity<>(answersJson, headers);
+        try {
+            ResponseEntity<String> responseEntity = restTemplate.postForEntity(sentinoApiUrl, requestEntity, String.class);
+            String responseBody = responseEntity.getBody();
+            boolean passed = processSentinoResponse(responseBody);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication.getName();
+            List<QueryDocumentSnapshot> applications = firestore.collection("applications")
+                    .whereEqualTo("email", email)
+                    .whereEqualTo("status", "Personality Test")
+                    .get()
+                    .get()
+                    .getDocuments();
+            if (!applications.isEmpty()) {
+                DocumentSnapshot applicationSnapshot = applications.get(0);
+                String applicationId = applicationSnapshot.getId();
+                String jobId = applicationSnapshot.getString("jobId");
+                Map<String, Object> applicationData = applicationSnapshot.getData();
+                applicationData.put("status", "Personality Test Done");
+                applicationData.put("personalityTestResult", passed ? "Passed" : "Failed");
+                firestore.collection("applications").document(applicationId).set(applicationData);
+                Map<String, Object> notificationData = new HashMap<>();
+                notificationData.put("email", email);
+                notificationData.put("message", passed ? "Congratulations! You have passed the personality test." : "Unfortunately, you did not pass the personality test.");
+                notificationData.put("timestamp", System.currentTimeMillis());
+                firestore.collection("notifications").add(notificationData);
+                model.addAttribute("message", "Personality test submitted successfully!");
+            } else {
+                model.addAttribute("error", "No application found for the personality test.");
+            }
+        } catch (HttpClientErrorException e) {
+            model.addAttribute("error", "Failed to submit answers to Sentino API. Please try again later.");
+        }
+        return "redirect:/welcome";
+    }
+
+    private boolean processSentinoResponse(String responseBody) {
+        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+        boolean passed = false;
+        if (jsonObject.has("result")) {
+            JsonObject result = jsonObject.getAsJsonObject("result");
+            if (result.has("score")) {
+                int score = result.get("score").getAsInt();
+                passed = score >= 15; // Example threshold
+            }
+        }
+        return passed;
+    }
+
+    @GetMapping("/applicationProgress")
+    public String applicationProgress(Model model) throws ExecutionException, InterruptedException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Firestore db = FirestoreClient.getFirestore();
+
+        List<QueryDocumentSnapshot> applications = db.collection("applications")
+                .whereEqualTo("email", email)
+                .get()
+                .get()
+                .getDocuments();
+        List<Map<String, Object>> applicationDetails = new ArrayList<>();
+        for (QueryDocumentSnapshot application : applications) {
+            Map<String, Object> details = new HashMap<>();
+            String jobId = application.getString("jobId");
+            DocumentSnapshot jobSnapshot = db.collection("jobPostings").document(jobId).get().get();
+            String jobTitle = jobSnapshot.exists() ? jobSnapshot.getString("title") : "Unknown";
+            String companyName = jobSnapshot.exists() ? jobSnapshot.getString("company") : "Unknown";
+            details.put("jobTitle", jobTitle);
+            details.put("companyName", companyName);
+            String status = application.getString("status");
+            if (status == null || status.equals("Shortlisted")) {
+                status = "Application Under Review";
+            } else if (status.equals("Personality Test")) {
+                status = "Next Stage: Personality Test";
+            }
+            details.put("status", status);
+            String statusClass;
+            switch (status) {
+                case "Application Under Review":
+                    statusClass = "status under-review";
+                    break;
+                case "Next Stage: Personality Test":
+                    statusClass = "status next-stage";
+                    break;
+                case "Rejected":
+                    statusClass = "status rejected";
+                    break;
+                default:
+                    statusClass = "status under-review";
+                    break;
+            }
+            details.put("statusClass", statusClass);
+            applicationDetails.add(details);
+        }
+
+        List<QueryDocumentSnapshot> notifications = db.collection("notifications")
+                .whereEqualTo("email", email)
+                .whereEqualTo("read", false)
+                .orderBy("timestamp", com.google.cloud.firestore.Query.Direction.DESCENDING)
+                .get()
+                .get()
+                .getDocuments();
+        model.addAttribute("applications", applicationDetails);
+        model.addAttribute("notifications", notifications);
+        return "application_progress";
     }
 }

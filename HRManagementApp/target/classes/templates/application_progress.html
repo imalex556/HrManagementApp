@@ -9,7 +9,6 @@
       margin: 0;
       padding: 0;
     }
-
     .navbar {
       background-color: #5cb85c;
       padding: 10px;
@@ -17,18 +16,15 @@
       justify-content: space-between;
       align-items: center;
     }
-
     .navbar a {
       color: #fff;
       text-decoration: none;
       padding: 10px;
       transition: background-color 0.3s ease;
     }
-
     .navbar a:hover {
       background-color: #4cae4c;
     }
-
     .container {
       background-color: #fff;
       padding: 40px;
@@ -37,13 +33,11 @@
       width: 600px;
       margin: 50px auto;
     }
-
     h2 {
       color: #333;
       margin-bottom: 20px;
       text-align: center;
     }
-
     .application-listing {
       background-color: #fff;
       margin-bottom: 20px;
@@ -51,43 +45,34 @@
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-
     .application-title {
       font-size: 1.2em;
       font-weight: bold;
       color: #5cb85c;
     }
-
     .application-details {
       margin-top: 10px;
     }
-
     .application-details p {
       margin: 5px 0;
       color: #555;
     }
-
     .status {
       font-weight: bold;
     }
-
     .status.under-review {
       color: orange;
     }
-
     .status.next-stage {
       color: green;
     }
-
     .status.rejected {
       color: red;
     }
-
     .notification-icon {
       position: relative;
       display: inline-block;
     }
-
     .notification-icon .badge {
       position: absolute;
       top: -10px;
@@ -97,12 +82,10 @@
       background-color: red;
       color: white;
     }
-
     .dropdown {
       position: relative;
       display: inline-block;
     }
-
     .dropbtn {
       background-color: #5cb85c;
       color: white;
@@ -110,7 +93,6 @@
       border: none;
       cursor: pointer;
     }
-
     .dropdown-content {
       display: none;
       position: absolute;
@@ -119,7 +101,6 @@
       box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
       z-index: 1;
     }
-
     .dropdown-content a {
       color: black;
       padding: 12px 16px;
@@ -127,11 +108,9 @@
       display: block;
       white-space: nowrap;
     }
-
     .dropdown:hover .dropdown-content {
       display: block;
     }
-
     .take-test-button {
       background-color: #5cb85c;
       color: #fff;
@@ -142,7 +121,6 @@
       transition: background-color 0.3s ease;
       margin-top: 10px;
     }
-
     .take-test-button:hover {
       background-color: #4cae4c;
     }
@@ -172,7 +150,7 @@
           <p><strong>Company:</strong> <span th:text="${app.get('companyName')}"></span></p>
           <p><strong>Status:</strong> <span th:text="${app.get('status')}" th:classappend="${app.get('statusClass')}"></span></p>
           <div th:if="${app.get('status') == 'Next Stage: Personality Test'}">
-            <form th:action="@{/takePersonalityTest}" method="get">
+            <form th:action="@{/takePersonalityTest/neo}" method="get">
               <button type="submit" class="take-test-button">Take Personality Test</button>
             </form>
           </div>

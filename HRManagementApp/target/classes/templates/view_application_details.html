@@ -1,116 +1,102 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Application Details</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-
-        .navbar {
-            background-color: #5cb85c;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .navbar a {
-            color: #fff;
-            text-decoration: none;
-            padding: 10px;
-            transition: background-color 0.3s ease;
-        }
-
-        .navbar a:hover {
-            background-color: #4cae4c;
-        }
-
-        .container {
-            padding: 20px;
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .details {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .details p {
-            margin: 10px 0;
-            color: #555;
-        }
-
-        .chart {
-            margin-top: 20px;
-        }
-
-        /* Dropdown Menu Styles */
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropbtn {
-            background-color: #5cb85c;
-            color: white;
-            padding: 10px 16px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        }
-
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
-
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-    </style>
+  <title>Application Details</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .navbar {
+      background-color: #5cb85c;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .navbar a {
+      color: #fff;
+      text-decoration: none;
+      padding: 10px;
+      transition: background-color 0.3s ease;
+    }
+    .navbar a:hover {
+      background-color: #4cae4c;
+    }
+    .container {
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .details {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .details p {
+      margin: 10px 0;
+      color: #555;
+    }
+    .chart {
+      margin-top: 20px;
+    }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropbtn {
+      background-color: #5cb85c;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      cursor: pointer;
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+    .dropdown-content a {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+    }
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <div class="navbar">
-        <a th:href="@{/welcome}">Home</a>
-        <div class="dropdown">
-            <a class="dropbtn">Menu</a>
-            <div class="dropdown-content">
-                <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/}">Logout</a>
-            </div>
-        </div>
+  <div class="navbar">
+    <a th:href="@{/welcome}">Home</a>
+    <div class="dropdown">
+      <a class="dropbtn">Menu</a>
+      <div class="dropdown-content">
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/}">Logout</a>
+      </div>
     </div>
-    <div class="container">
-        <h2>Application Details</h2>
-        <div class="details">
-            <p><strong>Name:</strong> <span th:text="${applicantName}"></span></p>
-            <p><strong>Email:</strong> <span th:text="${applicantEmail}"></span></p>
-            <div class="chart">
-                <img th:src="@{/generatePieChart(applicationId=${applicationId}, jobId=${jobId})}" alt="CV Match Percentage">
-            </div>
-        </div>
+  </div>
+  <div class="container">
+    <h2>Application Details</h2>
+    <div class="details">
+      <p><strong>Name:</strong> <span th:text="${applicantName}"></span></p>
+      <p><strong>Email:</strong> <span th:text="${applicantEmail}"></span></p>
+      <div class="chart">
+        <img th:src="@{/generatePieChart(applicationId=${applicationId}, jobId=${jobId})}" alt="CV Match Percentage">
+      </div>
     </div>
+  </div>
 </body>
 </html>
