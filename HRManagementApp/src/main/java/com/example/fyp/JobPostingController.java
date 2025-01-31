@@ -1,5 +1,6 @@
 package com.example.fyp;
 
+import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
@@ -571,112 +572,162 @@ public class JobPostingController {
     }
 
     @PostMapping("/submitPersonalityTest")
-    public String submitPersonalityTest(@RequestParam Map<String, String> answers, Model model) throws InterruptedException, ExecutionException {
-        // Translate responses to scores
-        Map<String, Integer> scoredAnswers = new HashMap<>();
-        for (Map.Entry<String, String> entry : answers.entrySet()) {
-            String response = entry.getValue().toLowerCase();
-            int score;
-            switch (response) {
-                case "strongly agree":
-                case "completely agree":
-                case "exactly":
-                case "absolutely":
-                    score = 3;
-                    break;
-                case "agree":
-                case "yes":
-                case "sure":
-                case "agreed":
-                case "indeed":
-                    score = 2;
-                    break;
-                case "slightly agree":
-                case "guess so":
-                case "maybe":
-                case "i suppose so":
-                    score = 1;
-                    break;
-                case "neutral":
-                case "neither":
-                case "whatever":
-                case "i don’t know":
-                    score = 0;
-                    break;
-                case "slightly disagree":
-                case "not really":
-                case "not sure":
-                    score = -1;
-                    break;
-                case "disagree":
-                case "no":
-                case "i disagree":
-                case "i don’t think so":
-                    score = -2;
-                    break;
-                case "strongly disagree":
-                case "no way":
-                case "totally disagree":
-                case "absolutely not":
-                    score = -3;
-                    break;
-                default:
-                    score = 0; // Default to neutral if response is unrecognized
-            }
-            scoredAnswers.put(entry.getKey(), score);
-        }
+    public String submitPersonalityTest(@RequestParam Map<String, String> answers, Model model) {
+        logger.info("Starting submitPersonalityTest method");
+        logger.info("Received answers: " + answers.toString());
 
-        String answersJson = new Gson().toJson(scoredAnswers);
-        String sentinoApiUrl = SENTINO_API_URL + "/v1/questionnaires/submit";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + SENTINO_API_TOKEN);
-        HttpEntity<String> requestEntity = new HttpEntity<>(answersJson, headers);
         try {
-            ResponseEntity<String> responseEntity = restTemplate.postForEntity(sentinoApiUrl, requestEntity, String.class);
+            // --- Sentino API Request Preparation ---
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("inventories", Collections.singletonList("neo"));
+            payload.put("lang", "en");
+
+            List<Map<String, String>> items = new ArrayList<>();
+            int questionIndex = 1;
+            for (Map.Entry<String, String> entry : answers.entrySet()) {
+                String response = entry.getValue().toLowerCase();
+                if (!isValidResponse(response)) {
+                    model.addAttribute("error", "Invalid response: " + response);
+                    return "redirect:/welcome";
+                }
+                Map<String, String> item = new HashMap<>();
+                item.put("item", "neo" + questionIndex);
+                item.put("response", response);
+                items.add(item);
+                questionIndex++;
+            }
+            payload.put("items", items);
+
+            String answersJson = new Gson().toJson(payload);
+            logger.info("Sentino API Payload: " + answersJson);
+
+            // --- Sentino API Call ---
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
+            HttpEntity<String> requestEntity = new HttpEntity<>(answersJson, headers);
+
+            ResponseEntity<String> responseEntity = restTemplate.postForEntity(
+                SENTINO_API_URL + "/api/score/items",
+                requestEntity,
+                String.class
+            );
             String responseBody = responseEntity.getBody();
+            logger.info("Sentino API Response: " + responseBody);
+
+            // --- Process Sentino Result ---
             boolean passed = processSentinoResponse(responseBody);
+            logger.info("Test result: " + (passed ? "Passed" : "Failed"));
+
+            // --- Firestore Operations ---
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String email = authentication.getName();
+            logger.info("Authenticated user: " + email);
+
+            // Get the application document
             List<QueryDocumentSnapshot> applications = firestore.collection("applications")
-                    .whereEqualTo("email", email)
-                    .whereEqualTo("status", "Personality Test")
-                    .get()
-                    .get()
-                    .getDocuments();
-            if (!applications.isEmpty()) {
-                DocumentSnapshot applicationSnapshot = applications.get(0);
-                String applicationId = applicationSnapshot.getId();
-                String jobId = applicationSnapshot.getString("jobId");
-                Map<String, Object> applicationData = applicationSnapshot.getData();
-                applicationData.put("status", "Personality Test Done");
-                applicationData.put("personalityTestResult", passed ? "Passed" : "Failed");
-                firestore.collection("applications").document(applicationId).set(applicationData);
-                Map<String, Object> notificationData = new HashMap<>();
-                notificationData.put("email", email);
-                notificationData.put("message", passed ? "Congratulations! You have passed the personality test." : "Unfortunately, you did not pass the personality test.");
-                notificationData.put("timestamp", System.currentTimeMillis());
-                firestore.collection("notifications").add(notificationData);
-                model.addAttribute("message", "Personality test submitted successfully!");
-            } else {
-                model.addAttribute("error", "No application found for the personality test.");
+                .whereEqualTo("email", email)
+                .whereEqualTo("status", "Personality Test")
+                .get().get().getDocuments();
+
+            if (applications.isEmpty()) {
+                logger.warning("No application found for personality test");
+                model.addAttribute("error", "No application found");
+                return "redirect:/welcome";
             }
+
+            DocumentSnapshot applicationSnapshot = applications.get(0);
+            String applicationId = applicationSnapshot.getId();
+            logger.info("Processing application ID: " + applicationId);
+
+            // --- Save Personality Test Results ---
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("applicationId", applicationId);
+            responseData.put("jobId", applicationSnapshot.getString("jobId"));
+            responseData.put("email", email);
+            responseData.put("name", applicationSnapshot.getString("name"));
+            responseData.put("responses", answers);
+            responseData.put("testResult", passed ? "Passed" : "Failed");
+            responseData.put("timestamp", FieldValue.serverTimestamp()); // Use Firestore timestamp
+
+            // Save to personalityTestResponses collection
+            firestore.collection("personalityTestResponses")
+                .document(applicationId)
+                .set(responseData)
+                .get();
+            logger.info("Saved personality test responses");
+
+            // --- Update Application Status ---
+            Map<String, Object> updates = new HashMap<>();
+            if (passed) {
+                updates.put("status", "Moved to Next Stage: Interview");
+                updates.put("personalityTestResult", "Passed");
+            } else {
+                updates.put("status", "Rejected");
+                updates.put("personalityTestResult", "Failed");
+            }
+
+            firestore.collection("applications")
+                .document(applicationId)
+                .update(updates)
+                .get();
+            logger.info("Updated application status");
+
+            // --- Send Notification ---
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("email", email);
+            notificationData.put("message", passed ? 
+                "Congratulations! You passed the personality test." : 
+                "Unfortunately, you did not pass the personality test.");
+            notificationData.put("read", false);
+            notificationData.put("timestamp", FieldValue.serverTimestamp());
+
+            firestore.collection("notifications")
+                .add(notificationData)
+                .get();
+            logger.info("Notification sent");
+
+            model.addAttribute("message", "Test submitted successfully!");
+
         } catch (HttpClientErrorException e) {
-            model.addAttribute("error", "Failed to submit answers to Sentino API. Please try again later.");
+            logger.severe("Sentino API Error: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
+            model.addAttribute("error", "API error: " + e.getStatusCode());
+        } catch (InterruptedException | ExecutionException e) {
+            logger.severe("Firestore Error: " + e.getMessage());
+            model.addAttribute("error", "Database error");
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            logger.severe("Unexpected Error: " + e.getMessage());
+            model.addAttribute("error", "Unexpected error");
         }
+
         return "redirect:/welcome";
     }
 
+    /**
+     * Validates if the response is one of the allowed values.
+     */
+    private boolean isValidResponse(String response) {
+        return response.matches("strongly agree|agree|slightly agree|neutral|slightly disagree|disagree|strongly disagree");
+    }
+
+    /**
+     * Processes the Sentino API response to determine if the user passed the test.
+     */
     private boolean processSentinoResponse(String responseBody) {
         JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
         boolean passed = false;
-        if (jsonObject.has("result")) {
-            JsonObject result = jsonObject.getAsJsonObject("result");
-            if (result.has("score")) {
-                int score = result.get("score").getAsInt();
-                passed = score >= 15; // Example threshold
+
+        if (jsonObject.has("scoring")) {
+            JsonObject scoring = jsonObject.getAsJsonObject("scoring");
+            if (scoring.has("neo")) {
+                JsonObject neo = scoring.getAsJsonObject("neo");
+                double score = neo.get("score").getAsDouble(); // Get the overall score
+                double threshold = 0.5; // Example threshold for passing
+                passed = score >= threshold;
             }
         }
+
         return passed;
     }
 
@@ -686,27 +737,49 @@ public class JobPostingController {
         String email = authentication.getName();
         Firestore db = FirestoreClient.getFirestore();
 
+        // Log the authenticated user's email
+        logger.info("Loading application progress for user: " + email);
+
+        // Fetch applications for the user
         List<QueryDocumentSnapshot> applications = db.collection("applications")
                 .whereEqualTo("email", email)
                 .get()
                 .get()
                 .getDocuments();
+
+        // Log the number of applications found
+        logger.info("Found " + applications.size() + " applications for user: " + email);
+
         List<Map<String, Object>> applicationDetails = new ArrayList<>();
         for (QueryDocumentSnapshot application : applications) {
             Map<String, Object> details = new HashMap<>();
             String jobId = application.getString("jobId");
+
+            // Fetch job details
             DocumentSnapshot jobSnapshot = db.collection("jobPostings").document(jobId).get().get();
             String jobTitle = jobSnapshot.exists() ? jobSnapshot.getString("title") : "Unknown";
             String companyName = jobSnapshot.exists() ? jobSnapshot.getString("company") : "Unknown";
+
+            // Log job details
+            logger.info("Job details for application: " + jobTitle + " at " + companyName);
+
             details.put("jobTitle", jobTitle);
             details.put("companyName", companyName);
+
+            // Determine application status
             String status = application.getString("status");
             if (status == null || status.equals("Shortlisted")) {
                 status = "Application Under Review";
             } else if (status.equals("Personality Test")) {
                 status = "Next Stage: Personality Test";
             }
+
+            // Log application status
+            logger.info("Application status for job " + jobTitle + ": " + status);
+
             details.put("status", status);
+
+            // Set status class for UI styling
             String statusClass;
             switch (status) {
                 case "Application Under Review":
@@ -723,9 +796,12 @@ public class JobPostingController {
                     break;
             }
             details.put("statusClass", statusClass);
+
+            // Add details to the list
             applicationDetails.add(details);
         }
 
+        // Fetch unread notifications for the user
         List<QueryDocumentSnapshot> notifications = db.collection("notifications")
                 .whereEqualTo("email", email)
                 .whereEqualTo("read", false)
@@ -733,8 +809,34 @@ public class JobPostingController {
                 .get()
                 .get()
                 .getDocuments();
+
+        // Log the number of unread notifications
+        logger.info("Found " + notifications.size() + " unread notifications for user: " + email);
+
+        // Convert Firestore timestamps to Java Date objects
+        List<Map<String, Object>> notificationDetails = new ArrayList<>();
+        for (QueryDocumentSnapshot notification : notifications) {
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("id", notification.getId());
+            notificationData.put("message", notification.getString("message"));
+            notificationData.put("read", notification.getBoolean("read"));
+
+            // Convert Firestore timestamp (Long) to Java Date
+            Long timestampMillis = notification.getLong("timestamp");
+            if (timestampMillis != null) {
+                Date timestampDate = new Date(timestampMillis);
+                notificationData.put("timestamp", timestampDate);
+            } else {
+                notificationData.put("timestamp", null); // Handle null timestamps
+            }
+
+            notificationDetails.add(notificationData);
+        }
+
+        // Add data to the model
         model.addAttribute("applications", applicationDetails);
-        model.addAttribute("notifications", notifications);
+        model.addAttribute("notifications", notificationDetails);
+
         return "application_progress";
     }
 }
