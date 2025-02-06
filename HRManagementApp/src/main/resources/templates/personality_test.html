@@ -73,21 +73,21 @@
   </style>
 </head>
 <body>
-  <div class="navbar">
-    <a th:href="@{/welcome}">Home</a>
-    <div class="dropdown">
-      <a class="dropbtn">Menu</a>
-      <div class="dropdown-content">
-        <a th:href="@{/profile}">Profile</a>
-        <a th:href="@{/notifications}" class="notification-icon">
-          Notifications
-          <span th:if="${notifications != null and #lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
-        </a>
-        <a th:href="@{/}">Logout</a>
-      </div>
-    </div>
-  </div>
-  <div class="container">
+	<div class="navbar">
+	    <a th:href="@{/welcome}">Home</a>
+	    <div class="dropdown">
+	      <a class="dropbtn">Menu</a>
+	      <div class="dropdown-content">
+	        <a th:href="@{/profile}">Profile</a>
+	        <a th:href="@{/notifications}" class="notification-icon">
+	          Notifications
+	          <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+	        </a>
+	        <a th:href="@{/}">Logout</a>
+	      </div>
+	    </div>
+	  </div>
+	  <div class="container">
     <h2>Personality Test</h2>
     <p>Please answer the following questions with detailed responses that reflect your feelings, behaviors, and personality traits. Avoid simple "yes" or "no" answers. Instead, provide more descriptive answers that give insight into your personality.</p>
     <form th:action="@{/submitPersonalityTest}" method="post">

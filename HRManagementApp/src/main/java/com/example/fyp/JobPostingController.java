@@ -146,10 +146,8 @@ public class JobPostingController {
         try {
             logger.log(Level.INFO, "Starting application submission for jobId: {0}", jobId);
 
-            // Encode the CV file to Base64
             String encodedCv = encodeFileToBase64(cv);
 
-            // Save the application details along with the encoded Cv
             String applicationId = UUID.randomUUID().toString();
             Map<String, Object> applicationData = new HashMap<>();
             applicationData.put("applicationId", applicationId);
@@ -219,7 +217,6 @@ public class JobPostingController {
                 applicationDetails.add(details);
             }
 
-            // Sort applications by match percentage in descending order
             applicationDetails.sort((a, b) -> Double.compare((double) b.get("matchPercentage"), (double) a.get("matchPercentage")));
 
             model.addAttribute("jobTitle", jobTitle);
@@ -366,7 +363,7 @@ public class JobPostingController {
             if (applicationSnapshot.exists()) {
                 Map<String, Object> applicationData = applicationSnapshot.getData();
                 applicationData.put("shortlisted", true);
-                applicationData.put("status", "Shortlisted"); // Update status
+                applicationData.put("status", "Shortlisted");
                 firestore.collection("applications").document(applicationId).set(applicationData);
                 model.addAttribute("message", "Application shortlisted successfully!");
             } else {
@@ -387,12 +384,10 @@ public class JobPostingController {
                 String userEmail = applicationSnapshot.getString("email");
                 String jobTitle = firestore.collection("jobPostings").document(jobId).get().get().getString("title");
 
-                // Update status before deleting the application
                 Map<String, Object> applicationData = applicationSnapshot.getData();
                 applicationData.put("status", "Rejected");
                 firestore.collection("applications").document(applicationId).set(applicationData);
 
-                // Add a notification for the user
                 Map<String, Object> notificationData = new HashMap<>();
                 notificationData.put("email", userEmail);
                 notificationData.put("message", "Your application for the job '" + jobTitle + "' has been rejected.");
@@ -467,7 +462,7 @@ public class JobPostingController {
             if (selectedJob == null || selectedJob.isEmpty() || selectedJob.equals(jobTitle)) {
                 List<QueryDocumentSnapshot> applications = firestore.collection("applications")
                         .whereEqualTo("jobId", jobId)
-                        .whereEqualTo("shortlisted", true) // Filter for shortlisted candidates
+                        .whereEqualTo("shortlisted", true) 
                         .get()
                         .get()
                         .getDocuments();
@@ -480,11 +475,10 @@ public class JobPostingController {
                     candidate.put("status", application.getString("status"));
                     candidates.add(candidate);
                 }
-                candidateStatuses.put(jobTitle, candidates); // Use job title instead of job ID
+                candidateStatuses.put(jobTitle, candidates);
             }
         }
 
-        // Pagination logic
         int totalCandidates = candidateStatuses.values().stream().mapToInt(List::size).sum();
         int totalPages = (int) Math.ceil((double) totalCandidates / size);
         int start = page * size;
@@ -512,12 +506,10 @@ public class JobPostingController {
                 String userEmail = applicationSnapshot.getString("email");
                 String jobTitle = firestore.collection("jobPostings").document(jobId).get().get().getString("title");
 
-                // Update application status
                 Map<String, Object> applicationData = applicationSnapshot.getData();
                 applicationData.put("status", "Personality Test");
                 firestore.collection("applications").document(applicationId).set(applicationData);
 
-                // Add a notification for the user
                 Map<String, Object> notificationData = new HashMap<>();
                 notificationData.put("email", userEmail);
                 notificationData.put("message", "Congratulations! You have been moved to the next stage for the job '" + jobTitle + "'. Please complete the personality test.");
@@ -535,11 +527,9 @@ public class JobPostingController {
         return "redirect:/viewShortlistedApplications?jobId=" + jobId;
     }
 
-    // Sentino API Integration Methods
 
     @GetMapping("/takePersonalityTest/neo")
     public String takePersonalityTest(Model model) {
-        // Sentino API endpoint and key
         String sentinoApiUrl = SENTINO_API_URL + "/api/items/neo";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
@@ -548,7 +538,6 @@ public class JobPostingController {
             ResponseEntity<String> responseEntity = restTemplate.exchange(sentinoApiUrl, HttpMethod.GET, requestEntity, String.class);
             String responseBody = responseEntity.getBody();
             List<String> questions = SentinoUtils.processSentinoQuestionsResponse(responseBody);
-            // Limit to 20 questions
             if (questions.size() > 20) {
                 questions = questions.subList(0, 20);
             }
@@ -577,7 +566,6 @@ public class JobPostingController {
         logger.info("Received answers: " + answers.toString());
 
         try {
-            // --- Sentino API Request Preparation ---
             Map<String, Object> payload = new HashMap<>();
             payload.put("inventories", Collections.singletonList("neo"));
             payload.put("lang", "en");
@@ -601,30 +589,32 @@ public class JobPostingController {
             String answersJson = new Gson().toJson(payload);
             logger.info("Sentino API Payload: " + answersJson);
 
-            // --- Sentino API Call ---
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
             HttpEntity<String> requestEntity = new HttpEntity<>(answersJson, headers);
 
             ResponseEntity<String> responseEntity = restTemplate.postForEntity(
-                SENTINO_API_URL + "/api/score/items",
-                requestEntity,
-                String.class
-            );
+            	    SENTINO_API_URL + "/api/score/items",
+            	    requestEntity,
+            	    String.class
+            	);
             String responseBody = responseEntity.getBody();
             logger.info("Sentino API Response: " + responseBody);
 
-            // --- Process Sentino Result ---
+            if (responseEntity.getStatusCode() != HttpStatus.OK) {
+                logger.severe("Sentino API returned an error: " + responseBody);
+                model.addAttribute("error", "API error: " + responseEntity.getStatusCode());
+                return "redirect:/welcome";
+            }
+
             boolean passed = processSentinoResponse(responseBody);
             logger.info("Test result: " + (passed ? "Passed" : "Failed"));
 
-            // --- Firestore Operations ---
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String email = authentication.getName();
             logger.info("Authenticated user: " + email);
 
-            // Get the application document
             List<QueryDocumentSnapshot> applications = firestore.collection("applications")
                 .whereEqualTo("email", email)
                 .whereEqualTo("status", "Personality Test")
@@ -640,7 +630,6 @@ public class JobPostingController {
             String applicationId = applicationSnapshot.getId();
             logger.info("Processing application ID: " + applicationId);
 
-            // --- Save Personality Test Results ---
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("applicationId", applicationId);
             responseData.put("jobId", applicationSnapshot.getString("jobId"));
@@ -648,16 +637,13 @@ public class JobPostingController {
             responseData.put("name", applicationSnapshot.getString("name"));
             responseData.put("responses", answers);
             responseData.put("testResult", passed ? "Passed" : "Failed");
-            responseData.put("timestamp", FieldValue.serverTimestamp()); // Use Firestore timestamp
-
-            // Save to personalityTestResponses collection
+            responseData.put("timestamp", FieldValue.serverTimestamp());
             firestore.collection("personalityTestResponses")
                 .document(applicationId)
                 .set(responseData)
                 .get();
             logger.info("Saved personality test responses");
 
-            // --- Update Application Status ---
             Map<String, Object> updates = new HashMap<>();
             if (passed) {
                 updates.put("status", "Moved to Next Stage: Interview");
@@ -673,7 +659,6 @@ public class JobPostingController {
                 .get();
             logger.info("Updated application status");
 
-            // --- Send Notification ---
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("email", email);
             notificationData.put("message", passed ? 
@@ -711,9 +696,6 @@ public class JobPostingController {
         return response.matches("strongly agree|agree|slightly agree|neutral|slightly disagree|disagree|strongly disagree");
     }
 
-    /**
-     * Processes the Sentino API response to determine if the user passed the test.
-     */
     private boolean processSentinoResponse(String responseBody) {
         JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
         boolean passed = false;
@@ -722,8 +704,8 @@ public class JobPostingController {
             JsonObject scoring = jsonObject.getAsJsonObject("scoring");
             if (scoring.has("neo")) {
                 JsonObject neo = scoring.getAsJsonObject("neo");
-                double score = neo.get("score").getAsDouble(); // Get the overall score
-                double threshold = 0.5; // Example threshold for passing
+                double score = neo.get("score").getAsDouble();
+                double threshold = 0.5;
                 passed = score >= threshold;
             }
         }
@@ -737,17 +719,13 @@ public class JobPostingController {
         String email = authentication.getName();
         Firestore db = FirestoreClient.getFirestore();
 
-        // Log the authenticated user's email
         logger.info("Loading application progress for user: " + email);
 
-        // Fetch applications for the user
         List<QueryDocumentSnapshot> applications = db.collection("applications")
                 .whereEqualTo("email", email)
                 .get()
                 .get()
                 .getDocuments();
-
-        // Log the number of applications found
         logger.info("Found " + applications.size() + " applications for user: " + email);
 
         List<Map<String, Object>> applicationDetails = new ArrayList<>();
@@ -755,18 +733,15 @@ public class JobPostingController {
             Map<String, Object> details = new HashMap<>();
             String jobId = application.getString("jobId");
 
-            // Fetch job details
             DocumentSnapshot jobSnapshot = db.collection("jobPostings").document(jobId).get().get();
             String jobTitle = jobSnapshot.exists() ? jobSnapshot.getString("title") : "Unknown";
             String companyName = jobSnapshot.exists() ? jobSnapshot.getString("company") : "Unknown";
 
-            // Log job details
             logger.info("Job details for application: " + jobTitle + " at " + companyName);
 
             details.put("jobTitle", jobTitle);
             details.put("companyName", companyName);
 
-            // Determine application status
             String status = application.getString("status");
             if (status == null || status.equals("Shortlisted")) {
                 status = "Application Under Review";
@@ -774,12 +749,10 @@ public class JobPostingController {
                 status = "Next Stage: Personality Test";
             }
 
-            // Log application status
             logger.info("Application status for job " + jobTitle + ": " + status);
 
             details.put("status", status);
 
-            // Set status class for UI styling
             String statusClass;
             switch (status) {
                 case "Application Under Review":
@@ -797,11 +770,9 @@ public class JobPostingController {
             }
             details.put("statusClass", statusClass);
 
-            // Add details to the list
             applicationDetails.add(details);
         }
 
-        // Fetch unread notifications for the user
         List<QueryDocumentSnapshot> notifications = db.collection("notifications")
                 .whereEqualTo("email", email)
                 .whereEqualTo("read", false)
@@ -810,10 +781,8 @@ public class JobPostingController {
                 .get()
                 .getDocuments();
 
-        // Log the number of unread notifications
         logger.info("Found " + notifications.size() + " unread notifications for user: " + email);
 
-        // Convert Firestore timestamps to Java Date objects
         List<Map<String, Object>> notificationDetails = new ArrayList<>();
         for (QueryDocumentSnapshot notification : notifications) {
             Map<String, Object> notificationData = new HashMap<>();
@@ -821,19 +790,17 @@ public class JobPostingController {
             notificationData.put("message", notification.getString("message"));
             notificationData.put("read", notification.getBoolean("read"));
 
-            // Convert Firestore timestamp (Long) to Java Date
             Long timestampMillis = notification.getLong("timestamp");
             if (timestampMillis != null) {
                 Date timestampDate = new Date(timestampMillis);
                 notificationData.put("timestamp", timestampDate);
             } else {
-                notificationData.put("timestamp", null); // Handle null timestamps
+                notificationData.put("timestamp", null);
             }
 
             notificationDetails.add(notificationData);
         }
 
-        // Add data to the model
         model.addAttribute("applications", applicationDetails);
         model.addAttribute("notifications", notificationDetails);
 

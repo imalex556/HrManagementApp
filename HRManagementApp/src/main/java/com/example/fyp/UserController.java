@@ -257,7 +257,6 @@ public class UserController {
 
     @GetMapping("/takePersonalityTest")
     public String takePersonalityTest(Model model) {
-        // Sentino API endpoint and key
         String sentinoApiUrl = SENTINO_API_URL + "/api/items/big5";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);

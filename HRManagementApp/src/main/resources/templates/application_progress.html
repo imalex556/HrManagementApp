@@ -127,21 +127,21 @@
   </style>
 </head>
 <body>
-  <div class="navbar">
-    <a th:href="@{/welcome}">Home</a>
-    <div class="dropdown">
-      <a class="dropbtn">Menu</a>
-      <div class="dropdown-content">
-        <a th:href="@{/profile}">Profile</a>
-        <a th:href="@{/notifications}" class="notification-icon">
-          Notifications
-          <span th:if="${notifications != null and #lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
-        </a>
-        <a th:href="@{/}">Logout</a>
-      </div>
-    </div>
-  </div>
-  <div class="container">
+	<div class="navbar">
+	    <a th:href="@{/welcome}">Home</a>
+	    <div class="dropdown">
+	      <a class="dropbtn">Menu</a>
+	      <div class="dropdown-content">
+	        <a th:href="@{/profile}">Profile</a>
+	        <a th:href="@{/notifications}" class="notification-icon">
+	          Notifications
+	          <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+	        </a>
+	        <a th:href="@{/}">Logout</a>
+	      </div>
+	    </div>
+	  </div>
+	  <div class="container">
     <h2>Application Progress</h2>
     <div th:if="${applications}">
       <div th:each="app : ${applications}" class="application-listing">
