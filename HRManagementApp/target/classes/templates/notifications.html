@@ -142,9 +142,10 @@
       <a class="dropbtn">Menu</a>
       <div class="dropdown-content">
         <a th:href="@{/profile}">Profile</a>
-        <a th:href="@{/notifications}" class="notification-icon">
-          Notifications
-          <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+		<a th:href="@{/notifications}" class="notification-icon">
+		    Notifications
+		    <span th:if="${notifications != null and #lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+		</a>
         </a>
         <a th:href="@{/}">Logout</a>
       </div>
