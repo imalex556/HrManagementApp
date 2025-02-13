@@ -89,7 +89,7 @@
 	  </div>
 	  <div class="container">
     <h2>Personality Test</h2>
-    <p>Please answer the following questions with detailed responses that reflect your feelings, behaviors, and personality traits. Avoid simple "yes" or "no" answers. Instead, provide more descriptive answers that give insight into your personality.</p>
+    <p>Please answer the following questions to be able to move to the next stage if succesfull.</p>
     <form th:action="@{/submitPersonalityTest}" method="post">
       <div th:each="question, iterStat : ${questions}" class="question">
         <label th:for="'question' + ${iterStat.index}" th:text="'Q' + (${iterStat.index + 1}) + '. ' + ${question}"></label>
