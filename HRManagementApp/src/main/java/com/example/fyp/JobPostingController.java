@@ -534,7 +534,6 @@ public class JobPostingController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
-        // Fetch notifications for the user
         List<QueryDocumentSnapshot> notifications = firestore.collection("notifications")
                 .whereEqualTo("email", email)
                 .whereEqualTo("read", false)
@@ -543,10 +542,8 @@ public class JobPostingController {
                 .get()
                 .getDocuments();
 
-        // Add notifications to the model
         model.addAttribute("notifications", notifications);
 
-        // Fetch questions from Sentino API
         String sentinoApiUrl = SENTINO_API_URL + "/api/items/neo";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
@@ -585,10 +582,9 @@ public class JobPostingController {
         logger.info("Starting submitPersonalityTest method");
         logger.info("Received answers: " + answers.toString());
 
-        // Filter out the _csrf token
+
         answers.remove("_csrf");
 
-        // Translate responses to scores
         List<Map<String, String>> items = new ArrayList<>();
         for (Map.Entry<String, String> entry : answers.entrySet()) {
             String response = entry.getValue().toLowerCase();
@@ -603,7 +599,6 @@ public class JobPostingController {
             items.add(item);
         }
 
-        // Prepare the JSON payload for the Sentino API
         Map<String, Object> payload = new HashMap<>();
         payload.put("inventories", Collections.singletonList("neo"));
         payload.put("items", items);
@@ -634,7 +629,6 @@ public class JobPostingController {
                 String name = applicationSnapshot.getString("name");
                 Map<String, Object> applicationData = applicationSnapshot.getData();
 
-                // Save personality test responses to a new collection
                 Map<String, Object> responseData = new HashMap<>();
                 responseData.put("applicationId", applicationId);
                 responseData.put("jobId", jobId);
@@ -644,7 +638,6 @@ public class JobPostingController {
                 firestore.collection("personalityTestResponses").add(responseData);
                 logger.info("Personality test responses saved for applicationId: " + applicationId);
 
-                // Update application status based on test result
                 if (passed) {
                     applicationData.put("status", "Moved to Next Stage: Interview");
                     applicationData.put("personalityTestResult", "Passed");
@@ -653,11 +646,9 @@ public class JobPostingController {
                     applicationData.put("personalityTestResult", "Failed");
                 }
 
-                // Save updated application data
                 firestore.collection("applications").document(applicationId).set(applicationData);
                 logger.info("Application status updated for applicationId: " + applicationId);
 
-                // Send notification based on test result
                 Map<String, Object> notificationData = new HashMap<>();
                 notificationData.put("email", email);
                 notificationData.put("timestamp", System.currentTimeMillis());
