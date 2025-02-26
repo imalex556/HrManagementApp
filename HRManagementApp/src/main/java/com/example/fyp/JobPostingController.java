@@ -11,6 +11,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.api.services.calendar.model.Event;
+import com.example.fyp.InterviewSchedulerService;
+import jakarta.servlet.http.HttpSession;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.knowm.xchart.BitmapEncoder;
@@ -530,7 +534,7 @@ public class JobPostingController {
 
 
     @GetMapping("/takePersonalityTest/neo")
-    public String takePersonalityTest(Model model) throws ExecutionException, InterruptedException {
+    public String takePersonalityTest(Model model, HttpSession session) throws ExecutionException, InterruptedException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
@@ -548,22 +552,29 @@ public class JobPostingController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
         try {
             ResponseEntity<String> responseEntity = restTemplate.exchange(sentinoApiUrl, HttpMethod.GET, requestEntity, String.class);
             String responseBody = responseEntity.getBody();
             logger.info("Sentino API Questions Response: " + responseBody);
+
             List<String> questions = SentinoUtils.processSentinoQuestionsResponse(responseBody);
+
             if (questions.size() > 20) {
                 questions = questions.subList(0, 20);
             }
+
+
+            session.setAttribute("questions", questions);
             model.addAttribute("questions", questions);
         } catch (HttpClientErrorException e) {
             logger.severe("Failed to fetch items from Sentino API: " + e.getResponseBodyAsString());
             model.addAttribute("error", "Failed to fetch items from Sentino API. Please try again later.");
         }
+
         return "personality_test";
     }
-
+    
     private List<String> processSentinoQuestionsResponse(String responseBody) {
         JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
         List<String> questions = new ArrayList<>();
@@ -578,25 +589,48 @@ public class JobPostingController {
     }
 
     @PostMapping("/submitPersonalityTest")
-    public String submitPersonalityTest(@RequestParam Map<String, String> answers, Model model) throws InterruptedException, ExecutionException {
+    public String submitPersonalityTest(
+        @RequestParam Map<String, String> answers, 
+        Model model, 
+        HttpSession session
+    ) throws InterruptedException, ExecutionException {
         logger.info("Starting submitPersonalityTest method");
-        logger.info("Received answers: " + answers.toString());
-
-
         answers.remove("_csrf");
 
-        List<Map<String, String>> items = new ArrayList<>();
-        for (Map.Entry<String, String> entry : answers.entrySet()) {
-            String response = entry.getValue().toLowerCase();
-            if (!response.matches("strongly agree|agree|slightly agree|neutral|slightly disagree|disagree|strongly disagree")) {
-                logger.severe("Invalid response detected: " + entry.getKey() + "=" + entry.getValue());
-                model.addAttribute("error", "Invalid response: " + response);
-                return "redirect:/welcome";
+
+        List<String> questions = (List<String>) session.getAttribute("questions");
+        if (questions == null || questions.size() < 20) {
+            model.addAttribute("error", "Session expired or incomplete test. Please retake the test.");
+            return "redirect:/welcome";
+        }
+
+
+        Map<String, Integer> responseMapping = Map.of(
+            "strongly agree", 3,
+            "agree", 2,
+            "slightly agree", 1,
+            "neutral", 0,
+            "slightly disagree", -1,
+            "disagree", -2,
+            "strongly disagree", -3
+        );
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            String responseKey = "question" + i;
+            if (answers.containsKey(responseKey)) {
+                String response = answers.get(responseKey).toLowerCase();
+                
+                if (!responseMapping.containsKey(response)) {
+                    model.addAttribute("error", "Invalid response: " + response);
+                    return "redirect:/welcome";
+                }
+
+                Map<String, Object> item = new HashMap<>();
+                item.put("item", questions.get(i));
+                item.put("response", response);
+                items.add(item);
             }
-            Map<String, String> item = new HashMap<>();
-            item.put("item", entry.getKey());
-            item.put("response", response);
-            items.add(item);
         }
 
         Map<String, Object> payload = new HashMap<>();
@@ -604,99 +638,98 @@ public class JobPostingController {
         payload.put("items", items);
         payload.put("lang", "en");
 
-        String answersJson = new Gson().toJson(payload);
         String sentinoApiUrl = SENTINO_API_URL + "/api/score/items";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
-        HttpEntity<String> requestEntity = new HttpEntity<>(answersJson, headers);
+        
         try {
-            ResponseEntity<String> responseEntity = restTemplate.postForEntity(sentinoApiUrl, requestEntity, String.class);
-            String responseBody = responseEntity.getBody();
-            boolean passed = processSentinoResponse(responseBody);
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String email = authentication.getName();
-            List<QueryDocumentSnapshot> applications = firestore.collection("applications")
-                    .whereEqualTo("email", email)
-                    .whereEqualTo("status", "Personality Test")
-                    .get()
-                    .get()
-                    .getDocuments();
-            if (!applications.isEmpty()) {
-                DocumentSnapshot applicationSnapshot = applications.get(0);
-                String applicationId = applicationSnapshot.getId();
-                String jobId = applicationSnapshot.getString("jobId");
-                String name = applicationSnapshot.getString("name");
-                Map<String, Object> applicationData = applicationSnapshot.getData();
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                sentinoApiUrl,
+                new HttpEntity<>(new Gson().toJson(payload), headers),
+                String.class
+            );
 
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("applicationId", applicationId);
-                responseData.put("jobId", jobId);
-                responseData.put("email", email);
-                responseData.put("name", name);
-                responseData.put("responses", answers);
-                firestore.collection("personalityTestResponses").add(responseData);
-                logger.info("Personality test responses saved for applicationId: " + applicationId);
+            JsonObject jsonResponse = JsonParser.parseString(response.getBody()).getAsJsonObject();
+            boolean passed = processSentinoResponse(jsonResponse);
 
-                if (passed) {
-                    applicationData.put("status", "Moved to Next Stage: Interview");
-                    applicationData.put("personalityTestResult", "Passed");
-                } else {
-                    applicationData.put("status", "Rejected");
-                    applicationData.put("personalityTestResult", "Failed");
-                }
-
-                firestore.collection("applications").document(applicationId).set(applicationData);
-                logger.info("Application status updated for applicationId: " + applicationId);
-
-                Map<String, Object> notificationData = new HashMap<>();
-                notificationData.put("email", email);
-                notificationData.put("timestamp", System.currentTimeMillis());
-
-                if (passed) {
-                    notificationData.put("message", "Congratulations! You have passed the personality test and have been moved to the next stage: Interview.");
-                } else {
-                    notificationData.put("message", "Unfortunately, you did not pass the personality test. Your application has been rejected.");
-                }
-
-                firestore.collection("notifications").add(notificationData);
-                logger.info("Notification sent for applicationId: " + applicationId);
-
-                model.addAttribute("message", "Personality test submitted successfully!");
-            } else {
-                model.addAttribute("error", "No application found for the personality test.");
-                logger.warning("No application found for email: " + email);
-            }
-        } catch (HttpClientErrorException e) {
-            model.addAttribute("error", "Failed to submit answers to Sentino API. Please try again later.");
-            logger.severe("Failed to submit answers to Sentino API: " + e.getMessage());
+            updateApplicationStatus(passed);
+            
+            model.addAttribute("message", "Personality test submitted successfully!");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error processing Sentino response", e);
+            model.addAttribute("error", "Error processing test results");
         }
+
         return "redirect:/welcome";
     }
 
-    private boolean processSentinoResponse(String responseBody) {
-        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
-        boolean passed = false;
-        if (jsonObject.has("scoring")) {
-            JsonObject scoring = jsonObject.getAsJsonObject("scoring");
-            if (scoring.has("neo")) {
-                JsonObject neo = scoring.getAsJsonObject("neo");
-                if (neo.has("score")) {
-                    double score = neo.get("score").getAsDouble();
-                    double threshold = 0.5;
-                    passed = score >= threshold;
-                } else {
-                    logger.severe("Score field is missing in the Sentino API response.");
+    private boolean processSentinoResponse(JsonObject jsonResponse) {
+        try {
+            JsonObject scoring = jsonResponse.getAsJsonObject("scoring").getAsJsonObject("neo");
+            double total = 0;
+            int count = 0;
+
+            Set<String> invertTraits = Set.of("neuroticism", "disinhibition", "disagreeableness");
+
+            for (Map.Entry<String, JsonElement> entry : scoring.entrySet()) {
+                String trait = entry.getKey().toLowerCase();
+                double score = entry.getValue().getAsJsonObject().get("score").getAsDouble();
+                
+                if (invertTraits.contains(trait)) {
+                    score = -score;
                 }
-            } else {
-                logger.severe("NEO scoring is missing in the Sentino API response.");
+                
+                total += score;
+                count++;
             }
-        } else {
-            logger.severe("Scoring field is missing in the Sentino API response.");
+
+            double average = total / count;
+            logger.info("Calculated average score: " + average);
+            
+            return average >= 0.3;
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error parsing Sentino response", e);
+            return false;
         }
-        return passed;
     }
 
+    private void updateApplicationStatus(boolean passed) throws ExecutionException, InterruptedException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        List<QueryDocumentSnapshot> applications = firestore.collection("applications")
+            .whereEqualTo("email", email)
+            .whereEqualTo("status", "Personality Test")
+            .get()
+            .get()
+            .getDocuments();
+        if (!applications.isEmpty()) {
+            String applicationId = applications.get(0).getId();
+            String jobId = applications.get(0).getString("jobId");
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            String jobTitle = jobSnapshot.getString("title");
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", passed ? "Interview Stage" : "Rejected");
+            updates.put("personalityTestResult", passed ? "Passed" : "Failed");
+            
+            firestore.collection("applications")
+                .document(applicationId)
+                .update(updates);
+            
+            logger.info("Updated application status for: " + applicationId);
+            
+            if (passed) {
+                Map<String, Object> notificationData = new HashMap<>();
+                notificationData.put("email", email);
+                notificationData.put("message", "Congratulations! You have been moved to the interview stage for the job '" + jobTitle + "'.");
+                notificationData.put("timestamp", System.currentTimeMillis());
+                firestore.collection("notifications").add(notificationData);
+            }
+        }
+    }
+    
     @GetMapping("/applicationProgress")
     public String applicationProgress(Model model) throws ExecutionException, InterruptedException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -750,6 +783,9 @@ public class JobPostingController {
                     break;
                 default:
                     statusClass = "status under-review";
+                    break;
+                case "Interview Stage":
+                    statusClass = "status interview-stage";
                     break;
             }
             details.put("statusClass", statusClass);

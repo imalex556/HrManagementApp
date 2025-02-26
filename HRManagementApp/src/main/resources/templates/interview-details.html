@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Interview Details</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            margin: 50px auto;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        p {
+            margin: 10px 0;
+        }
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #5cb85c;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Interview Details</h2>
+        <p>Event ID: <span th:text="${eventId}"></span></p>
+        <p>Scheduled Time: <span th:text="${#dates.format(scheduledTime, 'yyyy-MM-dd HH:mm')}"></span></p>
+        <p>HR Contact: <span th:text="${hrEmail}"></span></p>
+        <a th:href="@{/welcome}">Back to Dashboard</a>
+    </div>
+</body>
+</html>

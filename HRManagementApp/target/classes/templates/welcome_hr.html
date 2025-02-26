@@ -112,13 +112,14 @@
     <div class="container">
         <h2>HR DASHBOARD</h2>
         <p>What would you like to do?</p>
-        <div class="link-group">
-            <a th:href="@{/createJobPosting}">Create Job Posting</a>
-            <a th:href="@{/viewJobs}">View Job Postings</a>
-            <a th:href="@{/viewApplications}">View Applications</a>
-            <a th:href="@{/selectJobForShortlistedApplications}">Shortlisted Applications</a>
-            <a th:href="@{/candidateTrackingDashboard}">Candidate Tracking Dashboard</a> <!-- New link for Candidate Tracking Dashboard -->
-        </div>
+		<div class="link-group">
+		    <a th:href="@{/createJobPosting}">Create Job Posting</a>
+		    <a th:href="@{/viewJobs}">View Job Postings</a>
+		    <a th:href="@{/viewApplications}">View Applications</a>
+		    <a th:href="@{/selectJobForShortlistedApplications}">Shortlisted Applications</a>
+		    <a th:href="@{/candidateTrackingDashboard}">Candidate Tracking Dashboard</a>
+		    <a th:href="@{/interview-details/{applicationId}(applicationId=${applicationId})}">View Interview Details</a>
+		</div>
     </div>
 </body>
 </html>
