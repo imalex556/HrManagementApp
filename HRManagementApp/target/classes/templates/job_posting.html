@@ -80,54 +80,67 @@
     button[type="submit"]:hover {
       background-color: #4cae4c;
     }
-	
-	/* Dropdown Menu Styles */
-	        .dropdown {
-	            position: relative;
-	            display: inline-block;
-	        }
-
-	        .dropbtn {
-	            background-color: #5cb85c;
-	            color: white;
-	            padding: 10px 16px;
-	            border: none;
-	            cursor: pointer;
-	        }
-
-	        .dropdown-content {
-	            display: none;
-	            position: absolute;
-	            background-color: #f9f9f9;
-	            min-width: 160px;
-	            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-	            z-index: 1;
-	        }
-
-	        .dropdown-content a {
-	            color: black;
-	            padding: 12px 16px;
-	            text-decoration: none;
-	            display: block;
-	        }
-
-	        .dropdown:hover .dropdown-content {
-	            display: block;
-	        }
-	    </style>
-	</head>
-	<body>
-	    <div class="navbar">
-	        <a th:href="@{/welcome}">Home</a>
-	        <div class="dropdown">
-	            <a class="dropbtn">Menu</a>
-	            <div class="dropdown-content">
-	                <a th:href="@{/profile}">Profile</a>
-	                <a th:href="@{/}">Logout</a>
-	            </div>
-	        </div>
-	    </div>
-	    <div class="container">
+    
+    .notification-icon {
+      position: relative;
+      display: inline-block;
+    }
+    .notification-icon .badge {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      padding: 5px 10px;
+      border-radius: 50%;
+      background-color: red;
+      color: white;
+    }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropbtn {
+      background-color: #5cb85c;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      cursor: pointer;
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+    .dropdown-content a {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+    }
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <a th:href="@{/welcome}">Home</a>
+    <div class="dropdown">
+      <a class="dropbtn">Menu</a>
+      <div class="dropdown-content">
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/notifications}" class="notification-icon">
+          Notifications
+          <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
+                class="badge" th:text="${#lists.size(notifications)}"></span>
+        </a>
+        <a th:href="@{/}">Logout</a>
+      </div>
+    </div>
+  </div>
+  <div class="container">
     <h2>Create Job Posting</h2>
     <form th:action="@{/createJobPosting}" method="post" th:object="${job}">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />

@@ -63,7 +63,21 @@
             background-color: #4cae4c;
         }
 
-        /* Dropdown Menu Styles */
+        .notification-icon {
+            position: relative;
+            display: inline-block;
+        }
+
+        .notification-icon .badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            padding: 5px 10px;
+            border-radius: 50%;
+            background-color: red;
+            color: white;
+        }
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -105,6 +119,11 @@
             <a class="dropbtn">Menu</a>
             <div class="dropdown-content">
                 <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/notifications}" class="notification-icon">
+                    Notifications
+                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
+                          class="badge" th:text="${#lists.size(notifications)}"></span>
+                </a>
                 <a th:href="@{/}">Logout</a>
             </div>
         </div>
@@ -112,14 +131,13 @@
     <div class="container">
         <h2>HR DASHBOARD</h2>
         <p>What would you like to do?</p>
-		<div class="link-group">
-		    <a th:href="@{/createJobPosting}">Create Job Posting</a>
-		    <a th:href="@{/viewJobs}">View Job Postings</a>
-		    <a th:href="@{/viewApplications}">View Applications</a>
-		    <a th:href="@{/selectJobForShortlistedApplications}">Shortlisted Applications</a>
-		    <a th:href="@{/candidateTrackingDashboard}">Candidate Tracking Dashboard</a>
-		    <a th:href="@{/interview-details/{applicationId}(applicationId=${applicationId})}">View Interview Details</a>
-		</div>
+        <div class="link-group">
+            <a th:href="@{/createJobPosting}">Create Job Posting</a>
+            <a th:href="@{/viewJobs}">View Job Postings</a>
+            <a th:href="@{/viewApplications}">View Applications</a>
+            <a th:href="@{/selectJobForShortlistedApplications}">Shortlisted Applications</a>
+            <a th:href="@{/candidateTrackingDashboard}">Candidate Tracking Dashboard</a>
+        </div>
     </div>
 </body>
 </html>

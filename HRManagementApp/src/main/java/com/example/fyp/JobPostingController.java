@@ -11,8 +11,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.api.services.calendar.model.Event;
-import com.example.fyp.InterviewSchedulerService;
 import jakarta.servlet.http.HttpSession;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -597,31 +595,22 @@ public class JobPostingController {
         logger.info("Starting submitPersonalityTest method");
         answers.remove("_csrf");
 
-
+        // Get questions from session
         List<String> questions = (List<String>) session.getAttribute("questions");
         if (questions == null || questions.size() < 20) {
             model.addAttribute("error", "Session expired or incomplete test. Please retake the test.");
             return "redirect:/welcome";
         }
 
-
-        Map<String, Integer> responseMapping = Map.of(
-            "strongly agree", 3,
-            "agree", 2,
-            "slightly agree", 1,
-            "neutral", 0,
-            "slightly disagree", -1,
-            "disagree", -2,
-            "strongly disagree", -3
-        );
-
+        // Prepare items for Sentino API
         List<Map<String, Object>> items = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             String responseKey = "question" + i;
             if (answers.containsKey(responseKey)) {
                 String response = answers.get(responseKey).toLowerCase();
                 
-                if (!responseMapping.containsKey(response)) {
+                if (!response.matches("strongly agree|agree|slightly agree|neutral|slightly disagree|disagree|strongly disagree")) {
+                    logger.severe("Invalid response detected: " + responseKey + "=" + response);
                     model.addAttribute("error", "Invalid response: " + response);
                     return "redirect:/welcome";
                 }
@@ -633,6 +622,7 @@ public class JobPostingController {
             }
         }
 
+        // Prepare payload for Sentino API
         Map<String, Object> payload = new HashMap<>();
         payload.put("inventories", Collections.singletonList("neo"));
         payload.put("items", items);
@@ -644,24 +634,76 @@ public class JobPostingController {
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
         
         try {
+            // Send request to Sentino API
             ResponseEntity<String> response = restTemplate.postForEntity(
                 sentinoApiUrl,
                 new HttpEntity<>(new Gson().toJson(payload), headers),
                 String.class
             );
 
+            // Process response
             JsonObject jsonResponse = JsonParser.parseString(response.getBody()).getAsJsonObject();
             boolean passed = processSentinoResponse(jsonResponse);
 
-            updateApplicationStatus(passed);
+            // Update application status and notify HR
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication.getName();
             
+            List<QueryDocumentSnapshot> applications = firestore.collection("applications")
+                .whereEqualTo("email", email)
+                .whereEqualTo("status", "Personality Test")
+                .get()
+                .get()
+                .getDocuments();
+
+            if (!applications.isEmpty()) {
+                DocumentSnapshot application = applications.get(0);
+                String applicationId = application.getId();
+                String jobId = application.getString("jobId");
+                String candidateName = application.getString("name");
+                
+                // Get job details
+                DocumentSnapshot job = firestore.collection("jobPostings").document(jobId).get().get();
+                String jobTitle = job.getString("title");
+                String hrEmail = job.getString("postedBy");
+
+                // Update application status
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("status", passed ? "Interview Stage" : "Rejected");
+                updates.put("personalityTestResult", passed ? "Passed" : "Failed");
+                firestore.collection("applications").document(applicationId).update(updates);
+
+                // Notify candidate
+                Map<String, Object> candidateNotification = new HashMap<>();
+                candidateNotification.put("email", email);
+                candidateNotification.put("message", passed ? 
+                    "Congratulations! You passed the personality test for " + jobTitle :
+                    "Unfortunately you didn't pass the personality test for " + jobTitle);
+                candidateNotification.put("timestamp", System.currentTimeMillis());
+                firestore.collection("notifications").add(candidateNotification);
+
+                // Notify HR if passed
+                if (passed) {
+                    Map<String, Object> hrNotification = new HashMap<>();
+                    hrNotification.put("email", hrEmail);
+                    hrNotification.put("message", candidateName + " passed personality test for " + jobTitle);
+                    hrNotification.put("timestamp", System.currentTimeMillis());
+                    hrNotification.put("type", "personality_test_passed");
+                    hrNotification.put("applicationId", applicationId);
+                    hrNotification.put("jobId", jobId);
+                    hrNotification.put("read", false);
+                    firestore.collection("notifications").add(hrNotification);
+                }
+            }
+
             model.addAttribute("message", "Personality test submitted successfully!");
+            return "redirect:/applicationProgress";
+            
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error processing Sentino response", e);
             model.addAttribute("error", "Error processing test results");
+            return "redirect:/welcome";
         }
-
-        return "redirect:/welcome";
     }
 
     private boolean processSentinoResponse(JsonObject jsonResponse) {
@@ -825,5 +867,150 @@ public class JobPostingController {
         model.addAttribute("notifications", notificationDetails);
 
         return "application_progress";
+    }
+    
+    @GetMapping("/scheduleInterview")
+    public String showScheduleInterviewForm(
+            @RequestParam String applicationId,
+            @RequestParam String jobId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+        DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+        
+        if (applicationSnapshot.exists() && jobSnapshot.exists()) {
+            model.addAttribute("applicationId", applicationId);
+            model.addAttribute("jobId", jobId);
+            model.addAttribute("candidateName", applicationSnapshot.getString("name"));
+            model.addAttribute("jobTitle", jobSnapshot.getString("title"));
+            return "schedule_interview";
+        } else {
+            model.addAttribute("error", "Application or Job not found.");
+            return "redirect:/viewShortlistedApplications?jobId=" + jobId;
+        }
+    }
+
+    @PostMapping("/scheduleInterview")
+    public String scheduleInterview(
+            @RequestParam String applicationId,
+            @RequestParam String jobId,
+            @RequestParam String interviewDateTime,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+        DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+        
+        if (applicationSnapshot.exists() && jobSnapshot.exists()) {
+            String candidateEmail = applicationSnapshot.getString("email");
+            String jobTitle = jobSnapshot.getString("title");
+
+            Map<String, Object> applicationData = applicationSnapshot.getData();
+            applicationData.put("status", "Interview Scheduled");
+            applicationData.put("interviewDateTime", interviewDateTime);
+            firestore.collection("applications").document(applicationId).set(applicationData);
+
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("email", candidateEmail);
+            notificationData.put("message", "Your interview for '" + jobTitle + "' is scheduled for " + interviewDateTime);
+            notificationData.put("timestamp", System.currentTimeMillis());
+            notificationData.put("type", "interview_scheduled");
+            notificationData.put("applicationId", applicationId);
+            notificationData.put("interviewDateTime", interviewDateTime);
+            firestore.collection("notifications").add(notificationData);
+            
+            model.addAttribute("message", "Interview scheduled successfully!");
+        } else {
+            model.addAttribute("error", "Application or Job not found.");
+        }
+        
+        return "redirect:/viewShortlistedApplications?jobId=" + jobId;
+    }
+
+    @PostMapping("/acceptInterview")
+    public String acceptInterview(
+            @RequestParam String notificationId,
+            @RequestParam String applicationId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot notificationSnapshot = firestore.collection("notifications").document(notificationId).get().get();
+        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+        
+        if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
+            Map<String, Object> applicationData = applicationSnapshot.getData();
+            applicationData.put("status", "Interview Accepted");
+            firestore.collection("applications").document(applicationId).set(applicationData);
+
+            firestore.collection("notifications").document(notificationId).update("read", true);
+
+            String hrEmail = applicationSnapshot.getString("postedBy");
+            String candidateName = applicationSnapshot.getString("name");
+            String jobTitle = firestore.collection("jobPostings").document(applicationSnapshot.getString("jobId")).get().get().getString("title");
+            String interviewDateTime = applicationSnapshot.getString("interviewDateTime");
+            
+            Map<String, Object> hrNotificationData = new HashMap<>();
+            hrNotificationData.put("email", hrEmail);
+            hrNotificationData.put("message", candidateName + " has accepted the interview for '" + jobTitle + "' scheduled for " + interviewDateTime);
+            hrNotificationData.put("timestamp", System.currentTimeMillis());
+            firestore.collection("notifications").add(hrNotificationData);
+            
+            model.addAttribute("message", "Interview accepted successfully!");
+        } else {
+            model.addAttribute("error", "Notification or Application not found.");
+        }
+        
+        return "redirect:/applicationProgress";
+    }
+
+    @GetMapping("/rescheduleInterview")
+    public String showRescheduleForm(
+            @RequestParam String notificationId,
+            @RequestParam String applicationId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot notificationSnapshot = firestore.collection("notifications").document(notificationId).get().get();
+        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+        
+        if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
+            model.addAttribute("notificationId", notificationId);
+            model.addAttribute("applicationId", applicationId);
+            model.addAttribute("jobId", applicationSnapshot.getString("jobId"));
+            return "reschedule_request";
+        } else {
+            model.addAttribute("error", "Notification or Application not found.");
+            return "redirect:/applicationProgress";
+        }
+    }
+
+    @PostMapping("/submitRescheduleRequest")
+    public String submitRescheduleRequest(
+            @RequestParam String notificationId,
+            @RequestParam String applicationId,
+            @RequestParam String reason,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot notificationSnapshot = firestore.collection("notifications").document(notificationId).get().get();
+        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+        
+        if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
+            firestore.collection("notifications").document(notificationId).update("read", true);
+            
+            String hrEmail = applicationSnapshot.getString("postedBy");
+            String candidateName = applicationSnapshot.getString("name");
+            String jobTitle = firestore.collection("jobPostings").document(applicationSnapshot.getString("jobId")).get().get().getString("title");
+            
+            Map<String, Object> hrNotificationData = new HashMap<>();
+            hrNotificationData.put("email", hrEmail);
+            hrNotificationData.put("message", candidateName + " requested to reschedule interview for '" + jobTitle + "'. Reason: " + reason);
+            hrNotificationData.put("timestamp", System.currentTimeMillis());
+            hrNotificationData.put("type", "reschedule_request");
+            hrNotificationData.put("applicationId", applicationId);
+            firestore.collection("notifications").add(hrNotificationData);
+            
+            model.addAttribute("message", "Reschedule request submitted successfully!");
+        } else {
+            model.addAttribute("error", "Notification or Application not found.");
+        }
+        
+        return "redirect:/applicationProgress";
     }
 }

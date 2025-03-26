@@ -66,15 +66,17 @@
     .notification-item p {
       margin: 0;
       color: #555;
+      flex-grow: 1;
     }
 
     .notification-actions {
       display: flex;
+      gap: 10px;
       align-items: center;
     }
 
     .notification-actions form {
-      margin: 0 5px;
+      margin: 0;
     }
 
     .notification-actions button {
@@ -91,6 +93,10 @@
       background-color: #4cae4c;
     }
 
+    .notification-actions .schedule-btn {
+      background-color: #337ab7;
+    }
+
     .notification-actions .delete-button {
       background-color: #d9534f;
     }
@@ -99,7 +105,6 @@
       background-color: #c9302c;
     }
 
-    /* Dropdown Menu Styles */
     .dropdown {
       position: relative;
       display: inline-block;
@@ -127,7 +132,6 @@
       padding: 12px 16px;
       text-decoration: none;
       display: block;
-      white-space: nowrap;
     }
 
     .dropdown:hover .dropdown-content {
@@ -142,32 +146,41 @@
       <a class="dropbtn">Menu</a>
       <div class="dropdown-content">
         <a th:href="@{/profile}">Profile</a>
-		<a th:href="@{/notifications}" class="notification-icon">
-		    Notifications
-		    <span th:if="${notifications != null and #lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
-		</a>
+        <a th:href="@{/notifications}" class="notification-icon">
+          Notifications
+          <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
+                class="badge" th:text="${#lists.size(notifications)}"></span>
         </a>
         <a th:href="@{/}">Logout</a>
       </div>
     </div>
   </div>
   <div class="container">
-      <h2>Notifications</h2>
-      <ul class="notification-list">
-        <li th:each="notification : ${notifications}" th:classappend="${notification.get('read') != null && notification.get('read')} ? '' : 'unread'" class="notification-item">
-          <p th:text="${notification.get('message')}"></p>
-          <div class="notification-actions">
-            <form th:action="@{/markAsRead}" method="post">
-              <input type="hidden" name="notificationId" th:value="${notification.id}">
-              <button type="submit">Mark as Read</button>
-            </form>
-            <form th:action="@{/deleteNotification}" method="post">
-              <input type="hidden" name="notificationId" th:value="${notification.id}">
-              <button type="submit" class="delete-button">Delete</button>
+    <h2>Notifications</h2>
+    <ul class="notification-list">
+      <li th:each="notification : ${notifications}" 
+          th:classappend="${notification.get('read') != null && notification.get('read')} ? '' : 'unread'" 
+          class="notification-item">
+        <p th:text="${notification.get('message')}"></p>
+        <div class="notification-actions">
+          <div th:if="${notification.get('type') == 'personality_test_passed' && !notification.get('read')}">
+            <form th:action="@{/scheduleInterview}" method="get">
+              <input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
+              <input type="hidden" name="jobId" th:value="${notification.get('jobId')}">
+              <button type="submit" class="schedule-btn">Schedule Interview</button>
             </form>
           </div>
-        </li>
-      </ul>
-    </div>
-  </body>
-  </html>
+          <form th:action="@{/markAsRead}" method="post">
+            <input type="hidden" name="notificationId" th:value="${notification.id}">
+            <button type="submit">Mark Read</button>
+          </form>
+          <form th:action="@{/deleteNotification}" method="post">
+            <input type="hidden" name="notificationId" th:value="${notification.id}">
+            <button type="submit" class="delete-button">Delete</button>
+          </form>
+        </div>
+      </li>
+    </ul>
+  </div>
+</body>
+</html>

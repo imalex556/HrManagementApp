@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Reschedule Interview</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .navbar a:hover {
+            background-color: #4cae4c;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            margin: 50px auto;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            min-height: 100px;
+            resize: vertical;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex: 1;
+            margin: 0 5px;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        button.cancel {
+            background-color: #d9534f;
+        }
+        button.cancel:hover {
+            background-color: #c9302c;
+        }
+        .interview-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .interview-info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/notifications}">Notifications</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Reschedule Interview Request</h2>
+        
+        <div class="interview-info" th:if="${notification}">
+            <p><strong>Current Schedule:</strong> <span th:text="${notification.get('interviewDateTime')}"></span></p>
+        </div>
+        
+        <form th:action="@{/submitRescheduleRequest}" method="post">
+            <input type="hidden" name="notificationId" th:value="${notificationId}">
+            <input type="hidden" name="applicationId" th:value="${applicationId}">
+            
+            <div class="form-group">
+                <label for="reason">Reason for Rescheduling:</label>
+                <textarea id="reason" name="reason" required></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit">Submit Request</button>
+                <button type="button" class="cancel" onclick="window.location.href='/applicationProgress'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

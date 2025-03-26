@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Schedule Interview</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .navbar a:hover {
+            background-color: #4cae4c;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            margin: 50px auto;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="datetime-local"],
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            background-color: #5cb85c;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        button[type="submit"]:hover {
+            background-color: #4cae4c;
+        }
+        .candidate-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .candidate-info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/notifications}">Notifications</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Schedule Interview</h2>
+        
+        <div class="candidate-info">
+            <p><strong>Candidate:</strong> <span th:text="${candidateName}"></span></p>
+            <p><strong>Position:</strong> <span th:text="${jobTitle}"></span></p>
+        </div>
+        
+        <form th:action="@{/scheduleInterview}" method="post">
+            <input type="hidden" name="applicationId" th:value="${applicationId}">
+            <input type="hidden" name="jobId" th:value="${jobId}">
+            
+            <div class="form-group">
+                <label for="interviewDateTime">Date & Time:</label>
+                <input type="datetime-local" id="interviewDateTime" name="interviewDateTime" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="interviewType">Interview Type:</label>
+                <select id="interviewType" name="interviewType" required>
+                    <option value="Video Call">Video Call</option>
+                    <option value="In-Person">In-Person</option>
+                    <option value="Phone Call">Phone Call</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="location">Location/Details:</label>
+                <input type="text" id="location" name="location" 
+                       placeholder="Enter location or meeting link" required>
+            </div>
+            
+            <button type="submit">Schedule Interview</button>
+        </form>
+    </div>
+</body>
+</html>

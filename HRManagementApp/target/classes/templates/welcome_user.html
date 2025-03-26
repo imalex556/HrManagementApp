@@ -125,19 +125,17 @@
           Notifications
           <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
         </a>
-		<a th:href="@{/}">Logout</a>
-        
+        <a th:href="@{/}">Logout</a>
       </div>
     </div>
   </div>
   <div class="container">
     <h2>Welcome User</h2>
     <p>What would you like to do?</p>
-	<div class="link-group">
-	    <a th:href="@{/viewJobsUser}">View Job Postings</a>
-	    <a th:href="@{/applicationProgress}">Application Progress</a>
-	    <a th:href="@{/interview-details/{applicationId}(applicationId=${applicationId})}">View Interview Details</a>
-	</div>
+    <div class="link-group">
+      <a th:href="@{/viewJobsUser}">View Job Postings</a>
+      <a th:href="@{/applicationProgress}">Application Progress</a>
+    </div>
   </div>
 </body>
 </html>
