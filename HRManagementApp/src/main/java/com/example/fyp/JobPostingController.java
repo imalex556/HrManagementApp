@@ -558,8 +558,8 @@ public class JobPostingController {
 
             List<String> questions = SentinoUtils.processSentinoQuestionsResponse(responseBody);
 
-            if (questions.size() > 20) {
-                questions = questions.subList(0, 20);
+            if (questions.size() > 1) {
+                questions = questions.subList(0, 1);
             }
 
 
@@ -595,16 +595,14 @@ public class JobPostingController {
         logger.info("Starting submitPersonalityTest method");
         answers.remove("_csrf");
 
-        // Get questions from session
         List<String> questions = (List<String>) session.getAttribute("questions");
-        if (questions == null || questions.size() < 20) {
+        if (questions == null || questions.size() < 1) {
             model.addAttribute("error", "Session expired or incomplete test. Please retake the test.");
             return "redirect:/welcome";
         }
 
-        // Prepare items for Sentino API
         List<Map<String, Object>> items = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 1; i++) {
             String responseKey = "question" + i;
             if (answers.containsKey(responseKey)) {
                 String response = answers.get(responseKey).toLowerCase();
@@ -622,7 +620,6 @@ public class JobPostingController {
             }
         }
 
-        // Prepare payload for Sentino API
         Map<String, Object> payload = new HashMap<>();
         payload.put("inventories", Collections.singletonList("neo"));
         payload.put("items", items);
@@ -634,18 +631,15 @@ public class JobPostingController {
         headers.set("Authorization", "Token " + SENTINO_API_TOKEN);
         
         try {
-            // Send request to Sentino API
             ResponseEntity<String> response = restTemplate.postForEntity(
                 sentinoApiUrl,
                 new HttpEntity<>(new Gson().toJson(payload), headers),
                 String.class
             );
 
-            // Process response
             JsonObject jsonResponse = JsonParser.parseString(response.getBody()).getAsJsonObject();
             boolean passed = processSentinoResponse(jsonResponse);
 
-            // Update application status and notify HR
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String email = authentication.getName();
             
@@ -661,19 +655,16 @@ public class JobPostingController {
                 String applicationId = application.getId();
                 String jobId = application.getString("jobId");
                 String candidateName = application.getString("name");
-                
-                // Get job details
+
                 DocumentSnapshot job = firestore.collection("jobPostings").document(jobId).get().get();
                 String jobTitle = job.getString("title");
                 String hrEmail = job.getString("postedBy");
 
-                // Update application status
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("status", passed ? "Interview Stage" : "Rejected");
                 updates.put("personalityTestResult", passed ? "Passed" : "Failed");
                 firestore.collection("applications").document(applicationId).update(updates);
 
-                // Notify candidate
                 Map<String, Object> candidateNotification = new HashMap<>();
                 candidateNotification.put("email", email);
                 candidateNotification.put("message", passed ? 
@@ -682,7 +673,6 @@ public class JobPostingController {
                 candidateNotification.put("timestamp", System.currentTimeMillis());
                 firestore.collection("notifications").add(candidateNotification);
 
-                // Notify HR if passed
                 if (passed) {
                     Map<String, Object> hrNotification = new HashMap<>();
                     hrNotification.put("email", hrEmail);
@@ -729,7 +719,7 @@ public class JobPostingController {
             double average = total / count;
             logger.info("Calculated average score: " + average);
             
-            return average >= 0.3;
+            return average >= 0.0;
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error parsing Sentino response", e);
@@ -895,6 +885,8 @@ public class JobPostingController {
             @RequestParam String applicationId,
             @RequestParam String jobId,
             @RequestParam String interviewDateTime,
+            @RequestParam String interviewType,
+            @RequestParam String location,
             Model model) throws ExecutionException, InterruptedException {
         
         DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
@@ -907,15 +899,27 @@ public class JobPostingController {
             Map<String, Object> applicationData = applicationSnapshot.getData();
             applicationData.put("status", "Interview Scheduled");
             applicationData.put("interviewDateTime", interviewDateTime);
+            applicationData.put("interviewType", interviewType);
+            applicationData.put("interviewLocation", location);
             firestore.collection("applications").document(applicationId).set(applicationData);
+
+            String message = String.format(
+                "Your interview for '%s' is scheduled for %s (%s). %s",
+                jobTitle,
+                interviewDateTime,
+                interviewType,
+                interviewType.equals("In-Person") ? "Location: " + location : ""
+            );
 
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("email", candidateEmail);
-            notificationData.put("message", "Your interview for '" + jobTitle + "' is scheduled for " + interviewDateTime);
+            notificationData.put("message", message.trim());
             notificationData.put("timestamp", System.currentTimeMillis());
             notificationData.put("type", "interview_scheduled");
             notificationData.put("applicationId", applicationId);
             notificationData.put("interviewDateTime", interviewDateTime);
+            notificationData.put("interviewType", interviewType);
+            notificationData.put("interviewLocation", location);
             firestore.collection("notifications").add(notificationData);
             
             model.addAttribute("message", "Interview scheduled successfully!");
@@ -942,9 +946,11 @@ public class JobPostingController {
 
             firestore.collection("notifications").document(notificationId).update("read", true);
 
-            String hrEmail = applicationSnapshot.getString("postedBy");
+            String jobId = applicationSnapshot.getString("jobId");
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            String hrEmail = jobSnapshot.getString("postedBy");
             String candidateName = applicationSnapshot.getString("name");
-            String jobTitle = firestore.collection("jobPostings").document(applicationSnapshot.getString("jobId")).get().get().getString("title");
+            String jobTitle = jobSnapshot.getString("title");
             String interviewDateTime = applicationSnapshot.getString("interviewDateTime");
             
             Map<String, Object> hrNotificationData = new HashMap<>();
@@ -960,9 +966,9 @@ public class JobPostingController {
         
         return "redirect:/applicationProgress";
     }
-
-    @GetMapping("/rescheduleInterview")
-    public String showRescheduleForm(
+    
+    @PostMapping("/declineInterview")
+    public String declineInterview(
             @RequestParam String notificationId,
             @RequestParam String applicationId,
             Model model) throws ExecutionException, InterruptedException {
@@ -971,42 +977,26 @@ public class JobPostingController {
         DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
         
         if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
-            model.addAttribute("notificationId", notificationId);
-            model.addAttribute("applicationId", applicationId);
-            model.addAttribute("jobId", applicationSnapshot.getString("jobId"));
-            return "reschedule_request";
-        } else {
-            model.addAttribute("error", "Notification or Application not found.");
-            return "redirect:/applicationProgress";
-        }
-    }
+            Map<String, Object> applicationData = applicationSnapshot.getData();
+            applicationData.put("status", "Interview Declined");
+            firestore.collection("applications").document(applicationId).set(applicationData);
 
-    @PostMapping("/submitRescheduleRequest")
-    public String submitRescheduleRequest(
-            @RequestParam String notificationId,
-            @RequestParam String applicationId,
-            @RequestParam String reason,
-            Model model) throws ExecutionException, InterruptedException {
-        
-        DocumentSnapshot notificationSnapshot = firestore.collection("notifications").document(notificationId).get().get();
-        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
-        
-        if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
             firestore.collection("notifications").document(notificationId).update("read", true);
-            
-            String hrEmail = applicationSnapshot.getString("postedBy");
+
+            String jobId = applicationSnapshot.getString("jobId");
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            String hrEmail = jobSnapshot.getString("postedBy");
             String candidateName = applicationSnapshot.getString("name");
-            String jobTitle = firestore.collection("jobPostings").document(applicationSnapshot.getString("jobId")).get().get().getString("title");
+            String jobTitle = jobSnapshot.getString("title");
+            String interviewDateTime = applicationSnapshot.getString("interviewDateTime");
             
             Map<String, Object> hrNotificationData = new HashMap<>();
             hrNotificationData.put("email", hrEmail);
-            hrNotificationData.put("message", candidateName + " requested to reschedule interview for '" + jobTitle + "'. Reason: " + reason);
+            hrNotificationData.put("message", candidateName + " has declined the interview for '" + jobTitle + "' scheduled for " + interviewDateTime);
             hrNotificationData.put("timestamp", System.currentTimeMillis());
-            hrNotificationData.put("type", "reschedule_request");
-            hrNotificationData.put("applicationId", applicationId);
             firestore.collection("notifications").add(hrNotificationData);
             
-            model.addAttribute("message", "Reschedule request submitted successfully!");
+            model.addAttribute("message", "Interview declined successfully!");
         } else {
             model.addAttribute("error", "Notification or Application not found.");
         }

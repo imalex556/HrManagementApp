@@ -78,21 +78,24 @@
             margin: 5px 0;
         }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a th:href="@{/welcome}">Home</a>
-        <div class="dropdown">
-            <a class="dropbtn">Menu</a>
-            <div class="dropdown-content">
-                <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}">Notifications</a>
-                <a th:href="@{/}">Logout</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="container">
+	</head>
+	<body>
+	    <div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/notifications}" class="notification-icon">
+	                    Notifications
+	                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
+	                          class="badge" th:text="${#lists.size(notifications)}"></span>
+	                </a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
+	        </div>
+	    </div>
+	    <div class="container">
         <h2>Schedule Interview</h2>
         
         <div class="candidate-info">
@@ -112,16 +115,15 @@
             <div class="form-group">
                 <label for="interviewType">Interview Type:</label>
                 <select id="interviewType" name="interviewType" required>
-                    <option value="Video Call">Video Call</option>
+                    <option value="Online">Video Call</option>
                     <option value="In-Person">In-Person</option>
-                    <option value="Phone Call">Phone Call</option>
                 </select>
             </div>
             
             <div class="form-group">
                 <label for="location">Location/Details:</label>
                 <input type="text" id="location" name="location" 
-                       placeholder="Enter location or meeting link" required>
+                       placeholder="Enter location or Details" required>
             </div>
             
             <button type="submit">Schedule Interview</button>

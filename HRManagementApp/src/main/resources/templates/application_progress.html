@@ -57,6 +57,12 @@
       margin: 5px 0;
       color: #555;
     }
+    .interview-details {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f0f8ff;
+      border-radius: 5px;
+    }
     .status {
       font-weight: bold;
     }
@@ -68,6 +74,9 @@
     }
     .status.rejected {
       color: red;
+    }
+    .status.interview-stage {
+      color: #337ab7;
     }
     .notification-icon {
       position: relative;
@@ -111,7 +120,7 @@
     .dropdown:hover .dropdown-content {
       display: block;
     }
-    .take-test-button {
+    .take-test-button, .reschedule-btn {
       background-color: #5cb85c;
       color: #fff;
       padding: 10px;
@@ -120,28 +129,36 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
       margin-top: 10px;
+      display: inline-block;
     }
     .take-test-button:hover {
       background-color: #4cae4c;
     }
+    .reschedule-btn {
+      background-color: #f0ad4e;
+      margin-left: 10px;
+    }
+    .reschedule-btn:hover {
+      background-color: #ec971f;
+    }
   </style>
 </head>
 <body>
-	<div class="navbar">
-	    <a th:href="@{/welcome}">Home</a>
-	    <div class="dropdown">
-	      <a class="dropbtn">Menu</a>
-	      <div class="dropdown-content">
-	        <a th:href="@{/profile}">Profile</a>
-	        <a th:href="@{/notifications}" class="notification-icon">
-	          Notifications
-	          <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
-	        </a>
-	        <a th:href="@{/}">Logout</a>
-	      </div>
-	    </div>
-	  </div>
-	  <div class="container">
+  <div class="navbar">
+    <a th:href="@{/welcome}">Home</a>
+    <div class="dropdown">
+      <a class="dropbtn">Menu</a>
+      <div class="dropdown-content">
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/notifications}" class="notification-icon">
+          Notifications
+          <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+        </a>
+        <a th:href="@{/}">Logout</a>
+      </div>
+    </div>
+  </div>
+  <div class="container">
     <h2>Application Progress</h2>
     <div th:if="${applications}">
       <div th:each="app : ${applications}" class="application-listing">
@@ -149,6 +166,15 @@
         <div class="application-details">
           <p><strong>Company:</strong> <span th:text="${app.get('companyName')}"></span></p>
           <p><strong>Status:</strong> <span th:text="${app.get('status')}" th:classappend="${app.get('statusClass')}"></span></p>
+          
+          <div th:if="${app.get('status') == 'Interview Scheduled'}" class="interview-details">
+            <p><strong>Interview Date:</strong> <span th:text="${app.get('interviewDateTime')}"></span></p>
+            <p><strong>Type:</strong> <span th:text="${app.get('interviewType')}"></span></p>
+            <p th:if="${app.get('interviewType') == 'In-Person'}">
+              <strong>Location:</strong> <span th:text="${app.get('interviewLocation')}"></span>
+            </p>
+          </div>
+          
           <div th:if="${app.get('status') == 'Next Stage: Personality Test'}">
             <form th:action="@{/takePersonalityTest/neo}" method="get">
               <button type="submit" class="take-test-button">Take Personality Test</button>
