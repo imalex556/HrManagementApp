@@ -798,6 +798,12 @@ public class JobPostingController {
                 status = "Application Under Review";
             } else if (status.equals("Personality Test")) {
                 status = "Next Stage: Personality Test";
+            } else if (status.equals("Interview Scheduled")) {
+                // Add interview details only for scheduled interviews
+                details.put("interviewDateTime", application.getString("interviewDateTime"));
+                details.put("interviewType", application.getString("interviewType"));
+                details.put("interviewLocation", application.getString("interviewLocation"));
+                details.put("interviewDetails", application.getString("interviewDetails"));
             }
 
             logger.info("Application status for job " + jobTitle + ": " + status);
@@ -815,11 +821,20 @@ public class JobPostingController {
                 case "Rejected":
                     statusClass = "status rejected";
                     break;
-                default:
-                    statusClass = "status under-review";
+                case "Interview Scheduled":
+                    statusClass = "status interview-scheduled";
                     break;
                 case "Interview Stage":
                     statusClass = "status interview-stage";
+                    break;
+                case "Interview Passed":
+                    statusClass = "status interview-passed";
+                    break;
+                case "Interview Failed":
+                    statusClass = "status interview-failed";
+                    break;
+                default:
+                    statusClass = "status under-review";
                     break;
             }
             details.put("statusClass", statusClass);

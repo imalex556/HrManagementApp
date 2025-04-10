@@ -78,6 +78,15 @@
     .status.interview-stage {
       color: #337ab7;
     }
+    .status.interview-passed {
+      color: green;
+    }
+    .status.interview-failed {
+      color: red;
+    }
+    .status.interview-scheduled {
+      color: #5bc0de;
+    }
     .notification-icon {
       position: relative;
       display: inline-block;
@@ -165,14 +174,40 @@
         <div class="application-title" th:text="${app.get('jobTitle')}"></div>
         <div class="application-details">
           <p><strong>Company:</strong> <span th:text="${app.get('companyName')}"></span></p>
-          <p><strong>Status:</strong> <span th:text="${app.get('status')}" th:classappend="${app.get('statusClass')}"></span></p>
+          <p><strong>Status:</strong> 
+            <span th:text="${app.get('status')}" 
+                  th:classappend="'status ' + 
+                  ${app.get('status') == 'Application Under Review' ? 'under-review' : 
+                   app.get('status') == 'Next Stage: Personality Test' ? 'next-stage' : 
+                   app.get('status') == 'Rejected' ? 'rejected' : 
+                   app.get('status') == 'Interview Stage' ? 'interview-stage' : 
+                   app.get('status') == 'Interview Passed' ? 'interview-passed' : 
+                   app.get('status') == 'Interview Failed' ? 'interview-failed' : 
+                   app.get('status') == 'Interview Scheduled' ? 'interview-scheduled' : ''}"></span>
+          </p>
           
-          <div th:if="${app.get('status') == 'Interview Scheduled'}" class="interview-details">
-            <p><strong>Interview Date:</strong> <span th:text="${app.get('interviewDateTime')}"></span></p>
-            <p><strong>Type:</strong> <span th:text="${app.get('interviewType')}"></span></p>
-            <p th:if="${app.get('interviewType') == 'In-Person'}">
-              <strong>Location:</strong> <span th:text="${app.get('interviewLocation')}"></span>
+          <div th:if="${app.get('status') == 'Interview Scheduled' or app.get('status') == 'Interview Passed' or app.get('status') == 'Interview Failed'}" class="interview-details">
+            <p th:if="${app.get('interviewDateTime')}">
+              <strong>Interview Date:</strong> <span th:text="${app.get('interviewDateTime')}"></span>
             </p>
+            <p th:if="${app.get('interviewType')}">
+              <strong>Type:</strong> 
+              <span th:text="${app.get('interviewType') == 'In-Person' ? 'In-Person' : 'Online'}"></span>
+            </p>
+            
+            <!-- Show location for in-person interviews -->
+            <div th:if="${app.get('interviewType') == 'In-Person'}">
+              <p th:if="${app.get('interviewLocation')}">
+                <strong>Location:</strong> <span th:text="${app.get('interviewLocation')}"></span>
+              </p>
+            </div>
+            
+            <!-- Show details for online interviews -->
+            <div th:if="${app.get('interviewType') == 'Online'}">
+              <p th:if="${app.get('interviewDetails')}">
+                <strong>Details:</strong> <span th:text="${app.get('interviewDetails')}"></span>
+              </p>
+            </div>
           </div>
           
           <div th:if="${app.get('status') == 'Next Stage: Personality Test'}">
