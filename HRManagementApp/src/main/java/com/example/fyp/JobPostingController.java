@@ -1,5 +1,18 @@
 package com.example.fyp;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.FieldValue;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
@@ -47,6 +60,7 @@ import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -60,6 +74,9 @@ public class JobPostingController {
 
     @Autowired
     private Firestore firestore;
+    
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -592,8 +609,8 @@ public class JobPostingController {
     public String submitPersonalityTest(
         @RequestParam Map<String, String> answers, 
         Model model, 
-        HttpSession session
-    ) throws InterruptedException, ExecutionException {
+        HttpSession session) throws InterruptedException, ExecutionException {
+        
         logger.info("Starting submitPersonalityTest method");
         answers.remove("_csrf");
 
@@ -666,6 +683,26 @@ public class JobPostingController {
                 updates.put("status", passed ? "Interview Stage" : "Rejected");
                 updates.put("personalityTestResult", passed ? "Passed" : "Failed");
                 firestore.collection("applications").document(applicationId).update(updates);
+
+                // Send email notification to candidate
+                String emailSubject = passed ? 
+                    "Congratulations! You passed the personality test" : 
+                    "Update on your personality test results";
+                
+                String emailContent = passed ?
+                    "Dear " + candidateName + ",\n\n" +
+                    "We're pleased to inform you that you've passed the personality test for the position: " + jobTitle + ".\n\n" +
+                    "Our HR team will contact you shortly regarding the next steps in the hiring process.\n\n" +
+                    "Best regards,\n" +
+                    "HR Team" :
+                    "Dear " + candidateName + ",\n\n" +
+                    "Thank you for completing the personality test for the position: " + jobTitle + ".\n\n" +
+                    "After careful consideration, we regret to inform you that you did not pass this stage of the hiring process.\n\n" +
+                    "We appreciate your time and interest in our company.\n\n" +
+                    "Best regards,\n" +
+                    "HR Team";
+                
+                emailService.sendEmail(email, emailSubject, candidateName, emailContent);
 
                 Map<String, Object> candidateNotification = new HashMap<>();
                 candidateNotification.put("email", email);
@@ -901,7 +938,7 @@ public class JobPostingController {
     public String scheduleInterview(
             @RequestParam String applicationId,
             @RequestParam String jobId,
-            @RequestParam String interviewDateTime,
+            @RequestParam String interviewDateTime,  // Format: "YYYY-MM-DDThh:mm"
             @RequestParam String interviewType,
             @RequestParam String location,
             Model model) throws ExecutionException, InterruptedException {
@@ -912,19 +949,29 @@ public class JobPostingController {
             
             if (applicationSnapshot.exists() && jobSnapshot.exists()) {
                 String candidateEmail = applicationSnapshot.getString("email");
+                String candidateName = applicationSnapshot.getString("name");
                 String jobTitle = jobSnapshot.getString("title");
 
+                // 1. Parse the input datetime (comes in ISO-8601 format: "YYYY-MM-DDThh:mm")
+                LocalDateTime dateTime = LocalDateTime.parse(interviewDateTime);
+                
+                // 2. Format for display in email
+                DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a");
+                String formattedDate = dateTime.format(displayFormatter);
+
+                // Update application with interview details
                 Map<String, Object> applicationData = applicationSnapshot.getData();
                 applicationData.put("status", "Interview Scheduled");
-                applicationData.put("interviewDateTime", interviewDateTime);
+                applicationData.put("interviewDateTime", interviewDateTime); // Store original format
                 applicationData.put("interviewType", interviewType);
                 applicationData.put("interviewLocation", location);
                 firestore.collection("applications").document(applicationId).set(applicationData);
 
+                // Create interview record
                 Map<String, Object> interviewData = new HashMap<>();
                 interviewData.put("jobId", jobId);
                 interviewData.put("candidateEmail", candidateEmail);
-                interviewData.put("candidateName", applicationSnapshot.getString("name"));
+                interviewData.put("candidateName", candidateName);
                 interviewData.put("interviewDateTime", interviewDateTime);
                 interviewData.put("interviewType", interviewType);
                 interviewData.put("location", location);
@@ -932,22 +979,44 @@ public class JobPostingController {
                 interviewData.put("createdAt", FieldValue.serverTimestamp());
                 firestore.collection("interviews").add(interviewData);
 
-                String message = String.format(
+                // Prepare email content
+                String emailSubject = "Interview Scheduled: " + jobTitle;
+                String emailContent = "Dear " + candidateName + ",\n\n" +
+                    "We are pleased to invite you for an interview for the position: " + jobTitle + ".\n\n" +
+                    "Interview Details:\n" +
+                    "Date & Time: " + formattedDate + "\n" +
+                    "Type: " + interviewType + "\n";
+                
+                if ("In-Person".equals(interviewType)) {
+                    emailContent += "Location: " + location + "\n";
+                } else {
+                    emailContent += "Meeting Link: Will be sent to you prior to the interview\n";
+                }
+                
+                emailContent += "\nPlease confirm your availability by replying to this email.\n\n" +
+                    "Best regards,\n" +
+                    "HR Team";
+                
+                // Send email
+                emailService.sendEmail(candidateEmail, emailSubject, candidateName, emailContent);
+
+                // Create notification
+                String notificationMessage = String.format(
                     "Your interview for '%s' is scheduled for %s (%s). %s",
                     jobTitle,
-                    interviewDateTime,
+                    formattedDate,
                     interviewType,
                     interviewType.equals("In-Person") ? "Location: " + location : ""
                 );
 
                 Map<String, Object> notificationData = new HashMap<>();
                 notificationData.put("email", candidateEmail);
-                notificationData.put("message", message.trim());
+                notificationData.put("message", notificationMessage.trim());
                 notificationData.put("timestamp", System.currentTimeMillis());
                 notificationData.put("type", "interview_scheduled");
                 notificationData.put("applicationId", applicationId);
                 notificationData.put("jobId", jobId);
-                notificationData.put("candidateName", applicationSnapshot.getString("name"));
+                notificationData.put("candidateName", candidateName);
                 notificationData.put("jobTitle", jobTitle);
                 
                 firestore.collection("notifications").add(notificationData);
@@ -956,9 +1025,12 @@ public class JobPostingController {
             } else {
                 model.addAttribute("error", "Application or Job not found.");
             }
+        } catch (DateTimeParseException e) {
+            logger.log(Level.SEVERE, "Invalid date format received: " + interviewDateTime, e);
+            model.addAttribute("error", "Invalid date/time format. Please use the date picker.");
         } catch (Exception e) {
-            model.addAttribute("error", "Error scheduling interview: " + e.getMessage());
             logger.log(Level.SEVERE, "Error scheduling interview", e);
+            model.addAttribute("error", "Error scheduling interview: " + e.getMessage());
         }
         
         return "redirect:/viewShortlistedApplications?jobId=" + jobId;
@@ -1236,12 +1308,37 @@ public class JobPostingController {
         try {
             DocumentSnapshot interviewSnapshot = firestore.collection("interviews").document(interviewId).get().get();
             if (interviewSnapshot.exists()) {
+                String candidateEmail = interviewSnapshot.getString("candidateEmail");
+                String candidateName = interviewSnapshot.getString("candidateName");
+                String jobTitle = getJobTitle(jobId);
+                String interviewDateTime = interviewSnapshot.getString("interviewDateTime");
+
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("status", status);
                 updates.put("updatedAt", FieldValue.serverTimestamp());
                 firestore.collection("interviews").document(interviewId).update(updates).get();
 
-                String candidateEmail = interviewSnapshot.getString("candidateEmail");
+                // Send email notification to candidate
+                String emailSubject = "Interview Results: " + jobTitle;
+                String emailContent;
+                
+                if ("Passed".equals(status)) {
+                    emailContent = "Dear " + candidateName + ",\n\n" +
+                        "Congratulations! You have successfully passed the interview for " + jobTitle + ".\n\n" +
+                        "Our HR team will contact you shortly regarding the next steps in the hiring process.\n\n" +
+                        "Best regards,\n" +
+                        "HR Team";
+                } else {
+                    emailContent = "Dear " + candidateName + ",\n\n" +
+                        "Thank you for participating in the interview process for " + jobTitle + ".\n\n" +
+                        "After careful consideration, we regret to inform you that we won't be moving forward with your application at this time.\n\n" +
+                        "We appreciate your time and interest in our company.\n\n" +
+                        "Best regards,\n" +
+                        "HR Team";
+                }
+                
+                emailService.sendEmail(candidateEmail, emailSubject, candidateName, emailContent);
+
                 List<QueryDocumentSnapshot> applications = firestore.collection("applications")
                         .whereEqualTo("email", candidateEmail)
                         .whereEqualTo("jobId", jobId)
