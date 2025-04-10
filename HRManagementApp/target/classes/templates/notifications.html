@@ -231,11 +231,11 @@
           </div>
 		  <div th:if="${notification.get('type') == 'interview_scheduled' 
 		                and (notification.get('read') == null or !notification.get('read'))}">
-		    <form th:action="@{/acceptInterview}" method="post">
-		      <input type="hidden" name="notificationId" th:value="${notification.id}">
-		      <input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
-		      <button type="submit" class="accept-btn">Accept Interview</button>
-		    </form>
+			<form th:action="@{/acceptInterview}" method="post">
+				<input type="hidden" name="notificationId" th:value="${notification.id}">
+				<input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
+				<button type="submit" class="accept-btn">Accept Interview</button>
+			</form>
 		    <form th:action="@{/declineInterview}" method="post">
 		      <input type="hidden" name="notificationId" th:value="${notification.id}">
 		      <input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">

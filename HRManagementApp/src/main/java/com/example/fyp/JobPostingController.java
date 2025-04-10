@@ -1,6 +1,7 @@
 package com.example.fyp;
 
 import com.google.cloud.firestore.FieldValue;
+import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
@@ -12,7 +13,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.servlet.http.HttpSession;
-
+import com.google.cloud.firestore.FieldValue;
+import java.util.stream.Collectors;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.knowm.xchart.BitmapEncoder;
@@ -889,42 +891,59 @@ public class JobPostingController {
             @RequestParam String location,
             Model model) throws ExecutionException, InterruptedException {
         
-        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
-        DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
-        
-        if (applicationSnapshot.exists() && jobSnapshot.exists()) {
-            String candidateEmail = applicationSnapshot.getString("email");
-            String jobTitle = jobSnapshot.getString("title");
-
-            Map<String, Object> applicationData = applicationSnapshot.getData();
-            applicationData.put("status", "Interview Scheduled");
-            applicationData.put("interviewDateTime", interviewDateTime);
-            applicationData.put("interviewType", interviewType);
-            applicationData.put("interviewLocation", location);
-            firestore.collection("applications").document(applicationId).set(applicationData);
-
-            String message = String.format(
-                "Your interview for '%s' is scheduled for %s (%s). %s",
-                jobTitle,
-                interviewDateTime,
-                interviewType,
-                interviewType.equals("In-Person") ? "Location: " + location : ""
-            );
-
-            Map<String, Object> notificationData = new HashMap<>();
-            notificationData.put("email", candidateEmail);
-            notificationData.put("message", message.trim());
-            notificationData.put("timestamp", System.currentTimeMillis());
-            notificationData.put("type", "interview_scheduled");
-            notificationData.put("applicationId", applicationId);
-            notificationData.put("interviewDateTime", interviewDateTime);
-            notificationData.put("interviewType", interviewType);
-            notificationData.put("interviewLocation", location);
-            firestore.collection("notifications").add(notificationData);
+        try {
+            DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
             
-            model.addAttribute("message", "Interview scheduled successfully!");
-        } else {
-            model.addAttribute("error", "Application or Job not found.");
+            if (applicationSnapshot.exists() && jobSnapshot.exists()) {
+                String candidateEmail = applicationSnapshot.getString("email");
+                String jobTitle = jobSnapshot.getString("title");
+
+                Map<String, Object> applicationData = applicationSnapshot.getData();
+                applicationData.put("status", "Interview Scheduled");
+                applicationData.put("interviewDateTime", interviewDateTime);
+                applicationData.put("interviewType", interviewType);
+                applicationData.put("interviewLocation", location);
+                firestore.collection("applications").document(applicationId).set(applicationData);
+
+                Map<String, Object> interviewData = new HashMap<>();
+                interviewData.put("jobId", jobId);
+                interviewData.put("candidateEmail", candidateEmail);
+                interviewData.put("candidateName", applicationSnapshot.getString("name"));
+                interviewData.put("interviewDateTime", interviewDateTime);
+                interviewData.put("interviewType", interviewType);
+                interviewData.put("location", location);
+                interviewData.put("status", "Scheduled");
+                interviewData.put("createdAt", FieldValue.serverTimestamp());
+                firestore.collection("interviews").add(interviewData);
+
+                String message = String.format(
+                    "Your interview for '%s' is scheduled for %s (%s). %s",
+                    jobTitle,
+                    interviewDateTime,
+                    interviewType,
+                    interviewType.equals("In-Person") ? "Location: " + location : ""
+                );
+
+                Map<String, Object> notificationData = new HashMap<>();
+                notificationData.put("email", candidateEmail);
+                notificationData.put("message", message.trim());
+                notificationData.put("timestamp", System.currentTimeMillis());
+                notificationData.put("type", "interview_scheduled");
+                notificationData.put("applicationId", applicationId);
+                notificationData.put("jobId", jobId);
+                notificationData.put("candidateName", applicationSnapshot.getString("name"));
+                notificationData.put("jobTitle", jobTitle);
+                
+                firestore.collection("notifications").add(notificationData);
+                
+                model.addAttribute("message", "Interview scheduled successfully!");
+            } else {
+                model.addAttribute("error", "Application or Job not found.");
+            }
+        } catch (Exception e) {
+            model.addAttribute("error", "Error scheduling interview: " + e.getMessage());
+            logger.log(Level.SEVERE, "Error scheduling interview", e);
         }
         
         return "redirect:/viewShortlistedApplications?jobId=" + jobId;
@@ -932,75 +951,302 @@ public class JobPostingController {
 
     @PostMapping("/acceptInterview")
     public String acceptInterview(
-            @RequestParam String notificationId,
-            @RequestParam String applicationId,
-            Model model) throws ExecutionException, InterruptedException {
-        
-        DocumentSnapshot notificationSnapshot = firestore.collection("notifications").document(notificationId).get().get();
-        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
-        
-        if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
-            Map<String, Object> applicationData = applicationSnapshot.getData();
-            applicationData.put("status", "Interview Accepted");
-            firestore.collection("applications").document(applicationId).set(applicationData);
+        @RequestParam String notificationId,
+        @RequestParam String applicationId,
+        Model model) throws ExecutionException, InterruptedException {
 
-            firestore.collection("notifications").document(notificationId).update("read", true);
+        logger.info("Notification ID: " + notificationId);
+        logger.info("Application ID: " + applicationId);
+
+        try {
+            logger.info("Starting acceptInterview - notificationId: " + notificationId + ", applicationId: " + applicationId);
+
+            if (notificationId == null || notificationId.isEmpty() || applicationId == null || applicationId.isEmpty()) {
+                model.addAttribute("error", "Invalid notification or application ID");
+                return "redirect:/applicationProgress";
+            }
+
+            DocumentReference applicationRef = firestore.collection("applications").document(applicationId);
+            DocumentSnapshot applicationSnapshot = applicationRef.get().get();
+
+            if (!applicationSnapshot.exists()) {
+                model.addAttribute("error", "Application not found.");
+                return "redirect:/applicationProgress";
+            }
+
+            Map<String, Object> applicationUpdate = new HashMap<>();
+            applicationUpdate.put("status", "Interview Accepted");
+            applicationRef.update(applicationUpdate).get();
 
             String jobId = applicationSnapshot.getString("jobId");
+            if (jobId == null || jobId.isEmpty()) {
+                model.addAttribute("error", "Job ID not found in application.");
+                return "redirect:/applicationProgress";
+            }
+
             DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            if (!jobSnapshot.exists()) {
+                model.addAttribute("error", "Job not found.");
+                return "redirect:/applicationProgress";
+            }
+
             String hrEmail = jobSnapshot.getString("postedBy");
             String candidateName = applicationSnapshot.getString("name");
             String jobTitle = jobSnapshot.getString("title");
             String interviewDateTime = applicationSnapshot.getString("interviewDateTime");
-            
-            Map<String, Object> hrNotificationData = new HashMap<>();
-            hrNotificationData.put("email", hrEmail);
-            hrNotificationData.put("message", candidateName + " has accepted the interview for '" + jobTitle + "' scheduled for " + interviewDateTime);
-            hrNotificationData.put("timestamp", System.currentTimeMillis());
-            firestore.collection("notifications").add(hrNotificationData);
-            
+
+            Map<String, Object> hrNotification = new HashMap<>();
+            hrNotification.put("email", hrEmail);
+            hrNotification.put("message", candidateName + " has accepted the interview for '" + jobTitle + "' scheduled for " + interviewDateTime);
+            hrNotification.put("timestamp", System.currentTimeMillis());
+            hrNotification.put("type", "interview_response");
+            hrNotification.put("applicationId", applicationId);
+            hrNotification.put("jobId", jobId);
+            hrNotification.put("read", false);
+            firestore.collection("notifications").add(hrNotification).get();
+
+            logger.info("HR notification created successfully for HR: " + hrEmail);
+
+            DocumentReference notificationRef = firestore.collection("notifications").document(notificationId);
+            notificationRef.update("read", true).get();
+
             model.addAttribute("message", "Interview accepted successfully!");
-        } else {
-            model.addAttribute("error", "Notification or Application not found.");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error accepting interview", e);
+            model.addAttribute("error", "Failed to accept interview. Please try again.");
         }
-        
+
         return "redirect:/applicationProgress";
     }
-    
+
+
     @PostMapping("/declineInterview")
     public String declineInterview(
             @RequestParam String notificationId,
             @RequestParam String applicationId,
             Model model) throws ExecutionException, InterruptedException {
         
-        DocumentSnapshot notificationSnapshot = firestore.collection("notifications").document(notificationId).get().get();
-        DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
-        
-        if (notificationSnapshot.exists() && applicationSnapshot.exists()) {
-            Map<String, Object> applicationData = applicationSnapshot.getData();
-            applicationData.put("status", "Interview Declined");
-            firestore.collection("applications").document(applicationId).set(applicationData);
+        try {
+            logger.log(Level.INFO, "Starting declineInterview - notificationId: {0}, applicationId: {1}", 
+                new Object[]{notificationId, applicationId});
 
-            firestore.collection("notifications").document(notificationId).update("read", true);
+            if (applicationId == null || applicationId.isEmpty()) {
+                logger.log(Level.SEVERE, "Empty applicationId received");
+                model.addAttribute("error", "Invalid application ID");
+                return "redirect:/applicationProgress";
+            }
+
+            DocumentReference applicationRef = firestore.collection("applications").document(applicationId);
+            DocumentSnapshot applicationSnapshot = applicationRef.get().get();
+            
+            if (!applicationSnapshot.exists()) {
+                logger.log(Level.SEVERE, "Application not found for ID: {0}", applicationId);
+                model.addAttribute("error", "Application not found");
+                return "redirect:/applicationProgress";
+            }
 
             String jobId = applicationSnapshot.getString("jobId");
+            if (jobId == null || jobId.isEmpty()) {
+                logger.log(Level.SEVERE, "No jobId found in application: {0}", applicationId);
+                model.addAttribute("error", "Job ID not found in application");
+                return "redirect:/applicationProgress";
+            }
+
             DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            
+            if (!jobSnapshot.exists()) {
+                logger.log(Level.SEVERE, "Job not found for ID: {0}", jobId);
+                model.addAttribute("error", "Job not found");
+                return "redirect:/applicationProgress";
+            }
+
             String hrEmail = jobSnapshot.getString("postedBy");
             String candidateName = applicationSnapshot.getString("name");
             String jobTitle = jobSnapshot.getString("title");
             String interviewDateTime = applicationSnapshot.getString("interviewDateTime");
+
+            if (hrEmail == null || hrEmail.isEmpty()) {
+                logger.log(Level.SEVERE, "No HR email found for job: {0}", jobId);
+                model.addAttribute("error", "HR email not found for this job");
+                return "redirect:/applicationProgress";
+            }
+
+            Map<String, Object> applicationUpdate = new HashMap<>();
+            applicationUpdate.put("status", "Interview Declined");
+            applicationRef.update(applicationUpdate).get();
+
+            Map<String, Object> hrNotification = new HashMap<>();
+            hrNotification.put("email", hrEmail);
+            hrNotification.put("message", candidateName + " has declined the scheduled interview for " + 
+                interviewDateTime + " for " + jobTitle + " role.");
+            hrNotification.put("timestamp", FieldValue.serverTimestamp());
+            hrNotification.put("read", false);
+            hrNotification.put("type", "interview_response");
+            hrNotification.put("applicationId", applicationId);
+            hrNotification.put("jobId", jobId);
+            hrNotification.put("candidateName", candidateName);
+            hrNotification.put("jobTitle", jobTitle);
+
+            firestore.collection("notifications").add(hrNotification).get();
+
+            List<QueryDocumentSnapshot> interviews = firestore.collection("interviews")
+                .whereEqualTo("jobId", jobId)
+                .whereEqualTo("candidateEmail", applicationSnapshot.getString("email"))
+                .whereEqualTo("status", "Scheduled")
+                .get().get().getDocuments();
             
-            Map<String, Object> hrNotificationData = new HashMap<>();
-            hrNotificationData.put("email", hrEmail);
-            hrNotificationData.put("message", candidateName + " has declined the interview for '" + jobTitle + "' scheduled for " + interviewDateTime);
-            hrNotificationData.put("timestamp", System.currentTimeMillis());
-            firestore.collection("notifications").add(hrNotificationData);
-            
+            for (QueryDocumentSnapshot interview : interviews) {
+                Map<String, Object> interviewUpdate = new HashMap<>();
+                interviewUpdate.put("status", "Declined by Candidate");
+                interviewUpdate.put("interviewDateTime", null);
+                firestore.collection("interviews").document(interview.getId()).update(interviewUpdate).get();
+            }
+
+            if (notificationId != null && !notificationId.isEmpty()) {
+                try {
+                    DocumentReference notificationRef = firestore.collection("notifications").document(notificationId);
+                    DocumentSnapshot notificationSnapshot = notificationRef.get().get();
+                    if (notificationSnapshot.exists()) {
+                        notificationRef.update("read", true).get();
+                    }
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Could not mark notification {0} as read", notificationId);
+                }
+            }
+
             model.addAttribute("message", "Interview declined successfully!");
-        } else {
-            model.addAttribute("error", "Notification or Application not found.");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error declining interview", e);
+            model.addAttribute("error", "Failed to decline interview. Please try again.");
+        }
+
+        return "redirect:/applicationProgress";
+    }
+    
+    @GetMapping("/viewInterviews")
+    public String viewInterviews(
+            @RequestParam(required = false) String show,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String hrEmail = auth.getName();
+
+        List<QueryDocumentSnapshot> jobs = firestore.collection("jobPostings")
+                .whereEqualTo("postedBy", hrEmail)
+                .get().get().getDocuments();
+        model.addAttribute("jobs", jobs);
+        
+        if (show == null) {
+            return "interviews";
+        }
+
+        List<String> jobIds = jobs.stream().map(DocumentSnapshot::getId).collect(Collectors.toList());
+        
+        if ("completed".equals(show)) {
+            List<Map<String, Object>> completedInterviews = new ArrayList<>();
+            for (String jobId : jobIds) {
+                List<QueryDocumentSnapshot> interviews = firestore.collection("interviews")
+                        .whereEqualTo("jobId", jobId)
+                        .whereIn("status", Arrays.asList("Passed", "Failed"))
+                        .get().get().getDocuments();
+                
+                for (QueryDocumentSnapshot interview : interviews) {
+                    Map<String, Object> interviewData = new HashMap<>();
+                    interviewData.put("candidateName", interview.getString("candidateName"));
+                    interviewData.put("jobTitle", getJobTitle(interview.getString("jobId")));
+                    interviewData.put("interviewDateTime", interview.getString("interviewDateTime"));
+                    interviewData.put("status", interview.getString("status"));
+                    completedInterviews.add(interviewData);
+                }
+            }
+            model.addAttribute("completedInterviews", completedInterviews);
+        } 
+        else if ("all".equals(show)) {
+            List<Map<String, Object>> allInterviews = new ArrayList<>();
+            for (String jobId : jobIds) {
+                List<QueryDocumentSnapshot> interviews = firestore.collection("interviews")
+                        .whereEqualTo("jobId", jobId)
+                        .get().get().getDocuments();
+                
+                for (QueryDocumentSnapshot interview : interviews) {
+                    Map<String, Object> interviewData = new HashMap<>();
+                    interviewData.put("candidateName", interview.getString("candidateName"));
+                    interviewData.put("jobTitle", getJobTitle(interview.getString("jobId")));
+                    interviewData.put("interviewDateTime", interview.getString("interviewDateTime"));
+                    interviewData.put("status", interview.getString("status"));
+                    allInterviews.add(interviewData);
+                }
+            }
+            model.addAttribute("allInterviews", allInterviews);
         }
         
-        return "redirect:/applicationProgress";
+        return "interviews";
+    }
+
+    @GetMapping("/viewJobInterviews")
+    public String viewJobInterviews(
+            @RequestParam String jobId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+        if (!jobSnapshot.exists()) {
+            model.addAttribute("error", "Job not found");
+            return "interviews";
+        }
+        
+        model.addAttribute("jobTitle", jobSnapshot.getString("title"));
+        model.addAttribute("jobId", jobId);
+
+        List<QueryDocumentSnapshot> scheduledInterviews = firestore.collection("interviews")
+                .whereEqualTo("jobId", jobId)
+                .whereEqualTo("status", "Scheduled")
+                .get().get().getDocuments();
+        model.addAttribute("interviews", scheduledInterviews);
+        
+        return "interviews";
+    }
+
+    private String getJobTitle(String jobId) throws InterruptedException, ExecutionException {
+        DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+        return jobSnapshot.exists() ? jobSnapshot.getString("title") : "Unknown Job";
+    }
+
+    @PostMapping("/updateInterviewStatus")
+    public String updateInterviewStatus(
+            @RequestParam String interviewId,
+            @RequestParam String status,
+            @RequestParam String jobId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        try {
+            DocumentSnapshot interviewSnapshot = firestore.collection("interviews").document(interviewId).get().get();
+            if (interviewSnapshot.exists()) {
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("status", status);
+                updates.put("updatedAt", FieldValue.serverTimestamp());
+                firestore.collection("interviews").document(interviewId).update(updates).get();
+
+                String candidateEmail = interviewSnapshot.getString("candidateEmail");
+                List<QueryDocumentSnapshot> applications = firestore.collection("applications")
+                        .whereEqualTo("email", candidateEmail)
+                        .whereEqualTo("jobId", jobId)
+                        .get().get().getDocuments();
+                
+                if (!applications.isEmpty()) {
+                    Map<String, Object> appUpdates = new HashMap<>();
+                    appUpdates.put("status", "Interview " + status);
+                    firestore.collection("applications").document(applications.get(0).getId()).update(appUpdates).get();
+                }
+                
+                model.addAttribute("message", "Interview status updated successfully!");
+            } else {
+                model.addAttribute("error", "Interview not found");
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error updating interview status", e);
+            model.addAttribute("error", "Failed to update interview status");
+        }
+        
+        return "redirect:/viewJobInterviews?jobId=" + jobId;
     }
 }
