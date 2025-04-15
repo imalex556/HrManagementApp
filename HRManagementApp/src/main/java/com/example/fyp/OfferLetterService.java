@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 public class OfferLetterService {
@@ -17,25 +19,31 @@ public class OfferLetterService {
         PdfWriter.getInstance(document, outputStream);
         
         document.open();
-        
-        // Add title
+
+        // Add Company Logo
+        try {
+            Image logo = Image.getInstance("src/main/resources/static/images/logo.png");
+            logo.scaleToFit(100, 100);
+            logo.setAbsolutePosition(document.right() - 100, document.top() - 50);
+            document.add(logo);
+        } catch (Exception e) {
+            
+        }
+
         Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
         Paragraph title = new Paragraph("OFFER LETTER", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
-        title.setSpacingAfter(20);
+        title.setSpacingAfter(15);
         document.add(title);
         
-        // Add date
         Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
         Paragraph date = new Paragraph("Date: " + LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy")), normalFont);
         date.setSpacingAfter(20);
         document.add(date);
         
-        // Add recipient
         Paragraph recipient = new Paragraph("Dear " + candidateName + ",\n\n", normalFont);
         document.add(recipient);
         
-        // Add body
         String bodyText = "We are pleased to offer you the position of " + jobTitle + " at our company. " +
                          "This letter outlines the terms of your employment.\n\n" +
                          "Position: " + jobTitle + "\n" +
@@ -50,8 +58,7 @@ public class OfferLetterService {
         body.setSpacingAfter(20);
         document.add(body);
         
-        // Add closing
-        Paragraph closing = new Paragraph("Sincerely,\n\nHR Team\nCompany Name", normalFont);
+        Paragraph closing = new Paragraph("Sincerely,\n\nHR Team\nGoogle", normalFont);
         document.add(closing);
         
         document.close();
