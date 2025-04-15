@@ -1,6 +1,11 @@
 package com.example.fyp;
 
+import com.example.fyp.OfferLetterService;
+import org.springframework.mail.javamail.JavaMailSender;
 import java.time.LocalDateTime;
+import com.itextpdf.text.DocumentException;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -25,6 +30,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpSession;
 import com.google.cloud.firestore.FieldValue;
 import java.util.stream.Collectors;
@@ -43,6 +50,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -80,6 +88,12 @@ public class JobPostingController {
 
     @Autowired
     private RestTemplate restTemplate;
+    
+    @Autowired
+    private OfferLetterService offerLetterService;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
     private static final String SENTINO_API_URL = "https://api.sentino.org";
     private static final String SENTINO_API_TOKEN = "4bfbc08bf349c7f501db8405f5150cb65df3fefe";
@@ -1339,5 +1353,188 @@ public class JobPostingController {
         }
         
         return "redirect:/viewJobInterviews?jobId=" + jobId;
+    }
+    
+    @PostMapping("/generateOfferLetter")
+    public String generateOfferLetter(
+            @RequestParam String interviewId,
+            @RequestParam String jobId,
+            @RequestParam String candidateEmail,
+            @RequestParam double salary,
+            Model model) throws ExecutionException, InterruptedException, DocumentException {
+        
+        try {
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            List<QueryDocumentSnapshot> applications = firestore.collection("applications")
+                    .whereEqualTo("jobId", jobId)
+                    .whereEqualTo("email", candidateEmail)
+                    .get().get().getDocuments();
+            
+            if (applications.isEmpty() || !jobSnapshot.exists()) {
+                model.addAttribute("error", "Candidate or job not found");
+                return "redirect:/viewJobInterviews?jobId=" + jobId;
+            }
+            
+            String candidateName = applications.get(0).getString("name");
+            String jobTitle = jobSnapshot.getString("title");
+            String jobLocation = jobSnapshot.getString("location");
+            
+            byte[] offerLetterPdf = offerLetterService.generateOfferLetter(
+                    candidateName, jobTitle, jobLocation, salary);
+            
+            String offerId = UUID.randomUUID().toString();
+            Map<String, Object> offerData = new HashMap<>();
+            offerData.put("offerId", offerId);
+            offerData.put("applicationId", applications.get(0).getId());
+            offerData.put("jobId", jobId);
+            offerData.put("candidateEmail", candidateEmail);
+            offerData.put("candidateName", candidateName);
+            offerData.put("jobTitle", jobTitle);
+            offerData.put("salary", salary);
+            offerData.put("status", "Pending");
+            offerData.put("createdAt", FieldValue.serverTimestamp());
+            firestore.collection("offers").document(offerId).set(offerData);
+            
+            String emailSubject = "Job Offer: " + jobTitle;
+            String emailContent = "Dear " + candidateName + ",\n\n" +
+                    "Congratulations! We are pleased to offer you the position of " + jobTitle + ".\n\n" +
+                    "Please find attached your official offer letter. You can review and respond to this offer " +
+                    "directly in the application by accepting or declining the offer.\n\n" +
+                    "You have 7 days to respond to this offer.\n\n" +
+                    "Best regards,\n" +
+                    "HR Team";
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setTo(candidateEmail);
+            helper.setSubject(emailSubject);
+            helper.setText(emailContent);
+            helper.addAttachment("Offer_Letter_" + jobTitle.replace(" ", "_") + ".pdf", 
+                    new ByteArrayResource(offerLetterPdf));
+            mailSender.send(message);
+            
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("email", candidateEmail);
+            notificationData.put("message", "You have received a job offer for " + jobTitle);
+            notificationData.put("timestamp", System.currentTimeMillis());
+            notificationData.put("type", "offer_received");
+            notificationData.put("offerId", offerId);
+            notificationData.put("read", false);
+            firestore.collection("notifications").add(notificationData);
+            
+            firestore.collection("interviews").document(interviewId)
+                    .update("status", "Offer Sent");
+            
+            model.addAttribute("message", "Offer letter sent successfully!");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error generating offer letter", e);
+            model.addAttribute("error", "Failed to generate offer letter: " + e.getMessage());
+        }
+        
+        return "redirect:/viewJobInterviews?jobId=" + jobId;
+    }
+    
+    @PostMapping("/acceptOffer")
+    public String acceptOffer(
+            @RequestParam String offerId,
+            @RequestParam String notificationId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        try {
+            DocumentSnapshot offerSnapshot = firestore.collection("offers").document(offerId).get().get();
+            if (!offerSnapshot.exists()) {
+                model.addAttribute("error", "Offer not found");
+                return "redirect:/applicationProgress";
+            }
+            
+            firestore.collection("offers").document(offerId)
+                    .update("status", "Accepted",
+                            "acceptedAt", FieldValue.serverTimestamp());
+            
+            String applicationId = offerSnapshot.getString("applicationId");
+            firestore.collection("applications").document(applicationId)
+                    .update("status", "Offer Accepted");
+            
+            String jobId = offerSnapshot.getString("jobId");
+            String candidateName = offerSnapshot.getString("candidateName");
+            String jobTitle = offerSnapshot.getString("jobTitle");
+            
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            if (jobSnapshot.exists()) {
+                String hrEmail = jobSnapshot.getString("postedBy");
+                
+                Map<String, Object> hrNotification = new HashMap<>();
+                hrNotification.put("email", hrEmail);
+                hrNotification.put("message", candidateName + " has accepted the offer for " + jobTitle + ". Please check your email for details before accepting or declining the offer.");
+                hrNotification.put("timestamp", System.currentTimeMillis());
+                hrNotification.put("type", "offer_accepted");
+                hrNotification.put("read", false);
+                firestore.collection("notifications").add(hrNotification);
+            }
+            
+            if (notificationId != null && !notificationId.isEmpty()) {
+                firestore.collection("notifications").document(notificationId)
+                        .update("read", true);
+            }
+            
+            model.addAttribute("message", "Offer accepted successfully!");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error accepting offer", e);
+            model.addAttribute("error", "Failed to accept offer");
+        }
+        
+        return "redirect:/applicationProgress";
+    }
+
+    @PostMapping("/declineOffer")
+    public String declineOffer(
+            @RequestParam String offerId,
+            @RequestParam String notificationId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        try {
+            DocumentSnapshot offerSnapshot = firestore.collection("offers").document(offerId).get().get();
+            if (!offerSnapshot.exists()) {
+                model.addAttribute("error", "Offer not found");
+                return "redirect:/applicationProgress";
+            }
+            
+            firestore.collection("offers").document(offerId)
+                    .update("status", "Declined",
+                            "declinedAt", FieldValue.serverTimestamp());
+
+            String applicationId = offerSnapshot.getString("applicationId");
+            firestore.collection("applications").document(applicationId)
+                    .update("status", "Offer Declined");
+            
+            String jobId = offerSnapshot.getString("jobId");
+            String candidateName = offerSnapshot.getString("candidateName");
+            String jobTitle = offerSnapshot.getString("jobTitle");
+            
+            DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
+            if (jobSnapshot.exists()) {
+                String hrEmail = jobSnapshot.getString("postedBy");
+                
+                Map<String, Object> hrNotification = new HashMap<>();
+                hrNotification.put("email", hrEmail);
+                hrNotification.put("message", candidateName + " has declined the offer for " + jobTitle);
+                hrNotification.put("timestamp", System.currentTimeMillis());
+                hrNotification.put("type", "offer_declined");
+                hrNotification.put("read", false);
+                firestore.collection("notifications").add(hrNotification);
+            }
+            
+            if (notificationId != null && !notificationId.isEmpty()) {
+                firestore.collection("notifications").document(notificationId)
+                        .update("read", true);
+            }
+            
+            model.addAttribute("message", "Offer declined successfully!");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error declining offer", e);
+            model.addAttribute("error", "Failed to decline offer");
+        }
+        
+        return "redirect:/applicationProgress";
     }
 }

@@ -251,6 +251,19 @@
             <input type="hidden" name="notificationId" th:value="${notification.id}">
             <button type="submit" class="delete-button">Delete</button>
           </form>
+		  <div th:if="${notification.get('type') == 'offer_received' 
+		                and (notification.get('read') == null or !notification.get('read'))}">
+		      <form th:action="@{/acceptOffer}" method="post">
+		          <input type="hidden" name="offerId" th:value="${notification.get('offerId')}">
+		          <input type="hidden" name="notificationId" th:value="${notification.id}">
+		          <button type="submit" class="accept-btn">Accept Offer</button>
+		      </form>
+		      <form th:action="@{/declineOffer}" method="post">
+		          <input type="hidden" name="offerId" th:value="${notification.get('offerId')}">
+		          <input type="hidden" name="notificationId" th:value="${notification.id}">
+		          <button type="submit" class="delete-button">Decline Offer</button>
+		      </form>
+		  </div>
         </div>
       </li>
     </ul>

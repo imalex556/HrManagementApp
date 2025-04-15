@@ -270,6 +270,16 @@
 	                                    <button type="submit" name="status" value="Failed" 
 	                                            class="status-button fail-button">Fail</button>
 	                                </form>
+									<form th:action="@{/generateOfferLetter}" method="post">
+									    <input type="hidden" name="interviewId" th:value="${interview.id}">
+									    <input type="hidden" name="jobId" th:value="${jobId}">
+									    <input type="hidden" name="candidateEmail" th:value="${interview.getString('candidateEmail')}">
+									    <div class="form-group">
+									        <label for="salary">Salary Offer:</label>
+									        <input type="number" step="0.01" class="form-control" id="salary" name="salary" required>
+									    </div>
+									    <button type="submit" class="btn btn-success">Generate Offer Letter</button>
+									</form>
 	                            </td>
 	                        </tr>
 	                    </tbody>
