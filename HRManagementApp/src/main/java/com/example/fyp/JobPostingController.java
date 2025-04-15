@@ -684,13 +684,11 @@ public class JobPostingController {
                 updates.put("personalityTestResult", passed ? "Passed" : "Failed");
                 firestore.collection("applications").document(applicationId).update(updates);
 
-                // Send email notification to candidate
                 String emailSubject = passed ? 
                     "Congratulations! You passed the personality test" : 
                     "Update on your personality test results";
                 
                 String emailContent = passed ?
-                    "Dear " + candidateName + ",\n\n" +
                     "We're pleased to inform you that you've passed the personality test for the position: " + jobTitle + ".\n\n" +
                     "Our HR team will contact you shortly regarding the next steps in the hiring process.\n\n" +
                     "Best regards,\n" +
@@ -698,9 +696,7 @@ public class JobPostingController {
                     "Dear " + candidateName + ",\n\n" +
                     "Thank you for completing the personality test for the position: " + jobTitle + ".\n\n" +
                     "After careful consideration, we regret to inform you that you did not pass this stage of the hiring process.\n\n" +
-                    "We appreciate your time and interest in our company.\n\n" +
-                    "Best regards,\n" +
-                    "HR Team";
+                    "We appreciate your time and interest in our company.\n\n";
                 
                 emailService.sendEmail(email, emailSubject, candidateName, emailContent);
 
@@ -836,7 +832,6 @@ public class JobPostingController {
             } else if (status.equals("Personality Test")) {
                 status = "Next Stage: Personality Test";
             } else if (status.equals("Interview Scheduled")) {
-                // Add interview details only for scheduled interviews
                 details.put("interviewDateTime", application.getString("interviewDateTime"));
                 details.put("interviewType", application.getString("interviewType"));
                 details.put("interviewLocation", application.getString("interviewLocation"));
@@ -938,7 +933,7 @@ public class JobPostingController {
     public String scheduleInterview(
             @RequestParam String applicationId,
             @RequestParam String jobId,
-            @RequestParam String interviewDateTime,  // Format: "YYYY-MM-DDThh:mm"
+            @RequestParam String interviewDateTime,
             @RequestParam String interviewType,
             @RequestParam String location,
             Model model) throws ExecutionException, InterruptedException {
@@ -952,22 +947,18 @@ public class JobPostingController {
                 String candidateName = applicationSnapshot.getString("name");
                 String jobTitle = jobSnapshot.getString("title");
 
-                // 1. Parse the input datetime (comes in ISO-8601 format: "YYYY-MM-DDThh:mm")
                 LocalDateTime dateTime = LocalDateTime.parse(interviewDateTime);
                 
-                // 2. Format for display in email
                 DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a");
                 String formattedDate = dateTime.format(displayFormatter);
 
-                // Update application with interview details
                 Map<String, Object> applicationData = applicationSnapshot.getData();
                 applicationData.put("status", "Interview Scheduled");
-                applicationData.put("interviewDateTime", interviewDateTime); // Store original format
+                applicationData.put("interviewDateTime", interviewDateTime);
                 applicationData.put("interviewType", interviewType);
                 applicationData.put("interviewLocation", location);
                 firestore.collection("applications").document(applicationId).set(applicationData);
 
-                // Create interview record
                 Map<String, Object> interviewData = new HashMap<>();
                 interviewData.put("jobId", jobId);
                 interviewData.put("candidateEmail", candidateEmail);
@@ -979,13 +970,12 @@ public class JobPostingController {
                 interviewData.put("createdAt", FieldValue.serverTimestamp());
                 firestore.collection("interviews").add(interviewData);
 
-                // Prepare email content
                 String emailSubject = "Interview Scheduled: " + jobTitle;
-                String emailContent = "Dear " + candidateName + ",\n\n" +
-                    "We are pleased to invite you for an interview for the position: " + jobTitle + ".\n\n" +
+                String emailContent = "We are pleased to invite you for an interview for the position: " + jobTitle + ".\n\n" +
                     "Interview Details:\n" +
                     "Date & Time: " + formattedDate + "\n" +
                     "Type: " + interviewType + "\n";
+                   
                 
                 if ("In-Person".equals(interviewType)) {
                     emailContent += "Location: " + location + "\n";
@@ -993,14 +983,10 @@ public class JobPostingController {
                     emailContent += "Meeting Link: Will be sent to you prior to the interview\n";
                 }
                 
-                emailContent += "\nPlease confirm your availability by replying to this email.\n\n" +
-                    "Best regards,\n" +
-                    "HR Team";
-                
-                // Send email
+                emailContent += "\nPlease confirm your availability by replying to this email.\n\n";
+            
                 emailService.sendEmail(candidateEmail, emailSubject, candidateName, emailContent);
 
-                // Create notification
                 String notificationMessage = String.format(
                     "Your interview for '%s' is scheduled for %s (%s). %s",
                     jobTitle,
@@ -1318,23 +1304,16 @@ public class JobPostingController {
                 updates.put("updatedAt", FieldValue.serverTimestamp());
                 firestore.collection("interviews").document(interviewId).update(updates).get();
 
-                // Send email notification to candidate
                 String emailSubject = "Interview Results: " + jobTitle;
                 String emailContent;
                 
                 if ("Passed".equals(status)) {
-                    emailContent = "Dear " + candidateName + ",\n\n" +
-                        "Congratulations! You have successfully passed the interview for " + jobTitle + ".\n\n" +
-                        "Our HR team will contact you shortly regarding the next steps in the hiring process.\n\n" +
-                        "Best regards,\n" +
-                        "HR Team";
+                    emailContent = "Congratulations! You have successfully passed the interview for " + jobTitle + ".\n\n" +
+                        "Our HR team will contact you shortly regarding the next steps in the hiring process.\n\n";
                 } else {
-                    emailContent = "Dear " + candidateName + ",\n\n" +
-                        "Thank you for participating in the interview process for " + jobTitle + ".\n\n" +
+                    emailContent = "Thank you for participating in the interview process for " + jobTitle + ".\n\n" +
                         "After careful consideration, we regret to inform you that we won't be moving forward with your application at this time.\n\n" +
-                        "We appreciate your time and interest in our company.\n\n" +
-                        "Best regards,\n" +
-                        "HR Team";
+                        "We appreciate your time and interest in our company.\n\n";
                 }
                 
                 emailService.sendEmail(candidateEmail, emailSubject, candidateName, emailContent);

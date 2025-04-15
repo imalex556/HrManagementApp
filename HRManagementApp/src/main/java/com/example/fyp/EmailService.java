@@ -20,7 +20,7 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
     
-    @Autowired(required = false) // Make this optional
+    @Autowired(required = false)
     private TemplateEngine templateEngine;
 
     public void sendEmail(String to, String subject, String content) {
@@ -35,8 +35,7 @@ public class EmailService {
             helper.setFrom("noreply@yourhrsystem.com");
             helper.setTo(to);
             helper.setSubject(subject);
-            
-            // Try HTML template first, fall back to plain text
+
             if (templateEngine != null) {
                 try {
                     Context context = new Context();
