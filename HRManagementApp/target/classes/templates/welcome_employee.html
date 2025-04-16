@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>User Dashboard</title>
+    <title>Employee Dashboard</title>
     <style>
         body {
             font-family: sans-serif;
@@ -99,26 +99,10 @@
             text-decoration: none;
             display: inline-block;
             transition: background-color 0.3s ease;
-            margin: 5px;
         }
 
         .btn-primary:hover {
             background-color: #4cae4c;
-        }
-
-        .notification-icon {
-            position: relative;
-            display: inline-block;
-        }
-
-        .notification-icon .badge {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            padding: 5px 10px;
-            border-radius: 50%;
-            background-color: red;
-            color: white;
         }
     </style>
 </head>
@@ -129,11 +113,6 @@
             <a class="dropbtn">Menu</a>
             <div class="dropdown-content">
                 <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}" class="notification-icon">
-                    Notifications
-                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                          class="badge" th:text="${#lists.size(notifications)}"></span>
-                </a>
                 <a th:href="@{/}">Logout</a>
             </div>
         </div>
@@ -142,13 +121,8 @@
     <div class="container">
         <div class="options-grid">
             <div class="option-card">
-                <h2 class="option-title">Job Search</h2>
-                <a th:href="@{/viewJobsUser}" class="btn-primary">Browse Job Postings</a>
-            </div>
-            
-            <div class="option-card">
-                <h2 class="option-title">Applications</h2>
-                <a th:href="@{/applicationProgress}" class="btn-primary">Track Progress</a>
+                <h2 class="option-title">Probation Reviews</h2>
+                <a th:href="@{/probationReview}" class="btn-primary">Manage Reviews</a>
             </div>
         </div>
     </div>

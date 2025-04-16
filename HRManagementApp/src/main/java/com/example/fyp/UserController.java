@@ -76,6 +76,7 @@ public class UserController {
             @RequestParam String password,
             @RequestParam String name,
             @RequestParam String role,
+            @RequestParam(required = false) String team,
             Model model
     ) {
         try {
@@ -89,18 +90,30 @@ public class UserController {
                 model.addAttribute("message", "Email is already registered. Please use a different email.");
                 return "signup";
             }
+
             UserRecord.CreateRequest request = new UserRecord.CreateRequest()
                     .setEmail(email)
                     .setPassword(password)
                     .setDisplayName(name);
             UserRecord userRecord = FirebaseAuth.getInstance().createUser(request);
+            
             Map<String, Object> userData = new HashMap<>();
             userData.put("uid", userRecord.getUid());
             userData.put("email", email);
             userData.put("name", name);
             userData.put("role", role);
+            
+            if ("EMPLOYEE".equalsIgnoreCase(role)) {
+                if (team == null || team.trim().isEmpty()) {
+                    model.addAttribute("message", "Team is required for employees");
+                    return "signup";
+                }
+                userData.put("team", team);
+            }
+            
             userData.put("password", password);
             db.collection("users").document(userRecord.getUid()).set(userData).get();
+            
             model.addAttribute("message", "Signup successful! Please login.");
             return "login";
         } catch (FirebaseAuthException | ExecutionException | InterruptedException e) {
@@ -132,10 +145,15 @@ public class UserController {
                 List<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList(springSecurityRole);
                 Authentication authentication = new UsernamePasswordAuthenticationToken(email, password, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                if ("HR_STAFF".equalsIgnoreCase(role)) {
-                    return "redirect:/welcome_hr";
-                } else {
-                    return "redirect:/welcome_user";
+                switch (role.toUpperCase()) {
+                    case "HR_STAFF":
+                        return "redirect:/welcome_hr";
+                    case "EMPLOYEE":
+                        return "redirect:/welcome_employee";
+                    case "NEW_JOINER":
+                        return "redirect:/welcome_new_joiner";
+                    default:
+                        return "redirect:/welcome_user";
                 }
             } else {
                 model.addAttribute("error", "User data not found. Please try again.");
@@ -152,7 +170,6 @@ public class UserController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             String email = authentication.getName();
-            logger.info("Authenticated user: " + email);
             Firestore db = FirestoreClient.getFirestore();
             DocumentSnapshot userSnapshot = db.collection("users").whereEqualTo("email", email).get().get().getDocuments().get(0);
             if (userSnapshot.exists()) {
@@ -174,19 +191,20 @@ public class UserController {
                         .getDocuments();
                 boolean showPersonalityTestLink = !applications.isEmpty();
                 model.addAttribute("showPersonalityTestLink", showPersonalityTestLink);
-                if ("HR_STAFF".equals(role)) {
+                switch (role.toUpperCase()) {
+                case "HR_STAFF":
                     return "welcome_hr";
-                } else {
+                case "EMPLOYEE":
+                    return "welcome_employee";
+                case "NEW_JOINER":
+                    return "welcome_new_joiner";
+                default:
                     return "welcome_user";
-                }
-            } else {
-                model.addAttribute("error", "User data not found.");
-                return "login";
             }
-        } else {
-            return "login";
         }
     }
+    return "login";
+}
 
     @GetMapping("/notifications")
     public String viewNotifications(Model model) throws ExecutionException, InterruptedException {

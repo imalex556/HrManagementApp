@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Welcome HR</title>
+    <title>HR Dashboard</title>
     <style>
         body {
             font-family: sans-serif;
@@ -25,59 +25,6 @@
             transition: background-color 0.3s ease;
         }
 
-        .navbar a:hover {
-            background-color: #4cae4c;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 400px;
-            margin: 50px auto;
-        }
-
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .link-group {
-            margin-top: 20px;
-        }
-
-        .link-group a {
-            display: block;
-            background-color: #5cb85c;
-            color: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            text-decoration: none;
-            margin-bottom: 10px;
-            transition: background-color 0.3s ease;
-        }
-
-        .link-group a:hover {
-            background-color: #4cae4c;
-        }
-
-        .notification-icon {
-            position: relative;
-            display: inline-block;
-        }
-
-        .notification-icon .badge {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            padding: 5px 10px;
-            border-radius: 50%;
-            background-color: red;
-            color: white;
-        }
-
         .dropdown {
             position: relative;
             display: inline-block;
@@ -96,7 +43,7 @@
             position: absolute;
             background-color: #f9f9f9;
             min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
         }
 
@@ -110,6 +57,54 @@
         .dropdown:hover .dropdown-content {
             display: block;
         }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .option-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .option-title {
+            color: #5cb85c;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background-color: #5cb85c;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary:hover {
+            background-color: #4cae4c;
+        }
     </style>
 </head>
 <body>
@@ -119,25 +114,32 @@
             <a class="dropbtn">Menu</a>
             <div class="dropdown-content">
                 <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}" class="notification-icon">
-                    Notifications
-                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                          class="badge" th:text="${#lists.size(notifications)}"></span>
-                </a>
+                <a th:href="@{/notifications}">Notifications</a>
                 <a th:href="@{/}">Logout</a>
             </div>
         </div>
     </div>
+
     <div class="container">
-        <h2>HR DASHBOARD</h2>
-        <p>What would you like to do?</p>
-        <div class="link-group">
-            <a th:href="@{/createJobPosting}">Create Job Posting</a>
-            <a th:href="@{/viewJobs}">View Job Postings</a>
-            <a th:href="@{/viewApplications}">View Applications</a>
-            <a th:href="@{/selectJobForShortlistedApplications}">Shortlisted Applications</a>
-            <a th:href="@{/candidateTrackingDashboard}">Candidate Tracking Dashboard</a>
-			<a th:href="@{/viewInterviews}">View Interviews</a>
+        <div class="options-grid">
+            <div class="option-card">
+                <h2 class="option-title">Job Postings</h2>
+                <a th:href="@{/createJobPosting}" class="btn-primary">Create New</a>
+                <a th:href="@{/viewJobs}" class="btn-primary">View All</a>
+            </div>
+            <div class="option-card">
+                <h2 class="option-title">Applications</h2>
+                <a th:href="@{/viewApplications}" class="btn-primary">View Applications</a>
+                <a th:href="@{/selectJobForShortlistedApplications}" class="btn-primary">Shortlisted</a>
+            </div>
+			<div class="option-card">
+                <h2 class="option-title">Tracking</h2>
+                <a th:href="@{/candidateTrackingDashboard}" class="btn-primary">Candidate Tracking</a>
+            </div>
+            <div class="option-card">
+                <h2 class="option-title">Interviews</h2>
+                <a th:href="@{/viewInterviews}" class="btn-primary">Manage Interviews</a>
+            </div>
         </div>
     </div>
 </body>

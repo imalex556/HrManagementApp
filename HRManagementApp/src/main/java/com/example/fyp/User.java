@@ -5,15 +5,17 @@ public class User {
     private String email;
     private String name;
     private String role;
+    private String team;
 
     public User() {
     }
 
-    public User(String uid, String email, String name, String role) {
+    public User(String uid, String email, String name, String role, String team) {
         this.uid = uid;
         this.email = email;
         this.name = name;
         this.role = role;
+        this.team = team;
     }
 
     public String getUid() {
@@ -46,5 +48,11 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+    public String getTeam() { 
+    	return team; 
+    }
+    public void setTeam(String team) { 
+    	this.team = team; 
     }
 }

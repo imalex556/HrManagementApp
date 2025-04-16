@@ -41,6 +41,10 @@ public class WebSecurityConfig {
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers("/signup", "/login", "/").permitAll()
                 .requestMatchers("/createJobPosting").hasRole("HR_STAFF")
+                .requestMatchers("/welcome_employee", "/probationReview", 
+                               "/selectNewJoinerForReview", "/leaveReview", 
+                               "/submitProbationReview", "/reviewHistory").hasRole("EMPLOYEE")
+                .requestMatchers("/welcome_new_joiner").hasRole("NEW_JOINER")
                 .requestMatchers("/viewJobs", "/profile", "/updateProfile").authenticated()
                 .anyRequest().authenticated())
             .formLogin(login -> login
@@ -50,7 +54,7 @@ public class WebSecurityConfig {
                 .permitAll())
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessUrl("/logout")
+                .logoutSuccessUrl("/login")
                 .permitAll());
         return http.build();
     }

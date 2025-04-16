@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>User Dashboard</title>
+    <title>Select New Joiner</title>
     <style>
         body {
             font-family: sans-serif;
@@ -64,61 +64,45 @@
             padding: 20px;
         }
 
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+        .joiner-listing {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .option-card {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+        .joiner-info {
+            flex-grow: 1;
         }
 
-        .option-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .option-title {
+        .joiner-name {
+            font-size: 1.2em;
+            font-weight: bold;
             color: #5cb85c;
-            font-size: 1.5em;
-            margin-bottom: 15px;
         }
 
-        .btn-primary {
+        .joiner-email {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .review-button {
             background-color: #5cb85c;
-            color: white;
-            padding: 12px 30px;
+            color: #fff;
+            padding: 10px 20px;
             border: none;
-            border-radius: 25px;
+            border-radius: 5px;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
             transition: background-color 0.3s ease;
-            margin: 5px;
         }
 
-        .btn-primary:hover {
+        .review-button:hover {
             background-color: #4cae4c;
-        }
-
-        .notification-icon {
-            position: relative;
-            display: inline-block;
-        }
-
-        .notification-icon .badge {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            padding: 5px 10px;
-            border-radius: 50%;
-            background-color: red;
-            color: white;
         }
     </style>
 </head>
@@ -129,27 +113,27 @@
             <a class="dropbtn">Menu</a>
             <div class="dropdown-content">
                 <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}" class="notification-icon">
-                    Notifications
-                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                          class="badge" th:text="${#lists.size(notifications)}"></span>
-                </a>
                 <a th:href="@{/}">Logout</a>
             </div>
         </div>
     </div>
 
     <div class="container">
-        <div class="options-grid">
-            <div class="option-card">
-                <h2 class="option-title">Job Search</h2>
-                <a th:href="@{/viewJobsUser}" class="btn-primary">Browse Job Postings</a>
+        <h2>Select New Joiner for Review</h2>
+        <div th:if="${newJoiners}">
+            <div th:each="joiner : ${newJoiners}" class="joiner-listing">
+                <div class="joiner-info">
+                    <div class="joiner-name" th:text="${joiner.get('name')}"></div>
+                    <div class="joiner-email" th:text="${joiner.get('email')}"></div>
+                </div>
+                <form th:action="@{/leaveReview}" method="get">
+                    <input type="hidden" name="joinerId" th:value="${joiner.id}">
+                    <button type="submit" class="review-button">Leave Review</button>
+                </form>
             </div>
-            
-            <div class="option-card">
-                <h2 class="option-title">Applications</h2>
-                <a th:href="@{/applicationProgress}" class="btn-primary">Track Progress</a>
-            </div>
+        </div>
+        <div th:unless="${newJoiners}" class="no-joiners">
+            No new joiners available in your team for review.
         </div>
     </div>
 </body>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>User Dashboard</title>
+    <title>Probation Reviews</title>
     <style>
         body {
             font-family: sans-serif;
@@ -68,6 +68,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
+            margin-bottom: 40px;
         }
 
         .option-card {
@@ -89,6 +90,11 @@
             margin-bottom: 15px;
         }
 
+        .option-description {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
         .btn-primary {
             background-color: #5cb85c;
             color: white;
@@ -99,26 +105,10 @@
             text-decoration: none;
             display: inline-block;
             transition: background-color 0.3s ease;
-            margin: 5px;
         }
 
         .btn-primary:hover {
             background-color: #4cae4c;
-        }
-
-        .notification-icon {
-            position: relative;
-            display: inline-block;
-        }
-
-        .notification-icon .badge {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            padding: 5px 10px;
-            border-radius: 50%;
-            background-color: red;
-            color: white;
         }
     </style>
 </head>
@@ -129,11 +119,6 @@
             <a class="dropbtn">Menu</a>
             <div class="dropdown-content">
                 <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}" class="notification-icon">
-                    Notifications
-                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                          class="badge" th:text="${#lists.size(notifications)}"></span>
-                </a>
                 <a th:href="@{/}">Logout</a>
             </div>
         </div>
@@ -142,13 +127,15 @@
     <div class="container">
         <div class="options-grid">
             <div class="option-card">
-                <h2 class="option-title">Job Search</h2>
-                <a th:href="@{/viewJobsUser}" class="btn-primary">Browse Job Postings</a>
+                <h2 class="option-title">Leave New Review</h2>
+                <p class="option-description">Submit feedback for new team members during their probation period</p>
+                <a th:href="@{/selectNewJoinerForReview}" class="btn-primary">Review New Employee</a>
             </div>
             
             <div class="option-card">
-                <h2 class="option-title">Applications</h2>
-                <a th:href="@{/applicationProgress}" class="btn-primary">Track Progress</a>
+                <h2 class="option-title">Review History</h2>
+                <p class="option-description">View all probation reviews you've previously submitted</p>
+                <a th:href="@{/reviewHistory}" class="btn-primary">View My Reviews</a>
             </div>
         </div>
     </div>

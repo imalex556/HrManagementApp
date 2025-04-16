@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>User Dashboard</title>
+    <title>Review History</title>
     <style>
         body {
             font-family: sans-serif;
@@ -64,61 +64,44 @@
             padding: 20px;
         }
 
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .option-card {
+        .review-card {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        .option-card:hover {
-            transform: translateY(-5px);
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
         }
 
-        .option-title {
+        .joiner-name {
             color: #5cb85c;
-            font-size: 1.5em;
-            margin-bottom: 15px;
+            font-weight: bold;
         }
 
-        .btn-primary {
-            background-color: #5cb85c;
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            transition: background-color 0.3s ease;
-            margin: 5px;
+        .joiner-email {
+            color: #666;
+            font-size: 0.9em;
         }
 
-        .btn-primary:hover {
-            background-color: #4cae4c;
+        .review-date {
+            color: #666;
+            font-size: 0.9em;
         }
 
-        .notification-icon {
-            position: relative;
-            display: inline-block;
+        .review-content {
+            color: #333;
+            line-height: 1.6;
         }
 
-        .notification-icon .badge {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            padding: 5px 10px;
-            border-radius: 50%;
-            background-color: red;
-            color: white;
+        .no-reviews {
+            text-align: center;
+            color: #666;
+            padding: 40px;
         }
     </style>
 </head>
@@ -129,26 +112,28 @@
             <a class="dropbtn">Menu</a>
             <div class="dropdown-content">
                 <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}" class="notification-icon">
-                    Notifications
-                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                          class="badge" th:text="${#lists.size(notifications)}"></span>
-                </a>
                 <a th:href="@{/}">Logout</a>
             </div>
         </div>
     </div>
 
     <div class="container">
-        <div class="options-grid">
-            <div class="option-card">
-                <h2 class="option-title">Job Search</h2>
-                <a th:href="@{/viewJobsUser}" class="btn-primary">Browse Job Postings</a>
+        <div class="reviews-section">
+            <h2>Your Submitted Reviews</h2>
+            <div th:if="${not #lists.isEmpty(reviews)}">
+                <div th:each="review : ${reviews}" class="review-card">
+                    <div class="review-header">
+                        <div>
+                            <div class="joiner-name" th:text="${review.joinerName}"></div>
+                            <div class="joiner-email" th:text="${review.joinerEmail}"></div>
+                        </div>
+                        <div class="review-date" th:text="${#dates.format(review.timestamp, 'dd MMM yyyy')}"></div>
+                    </div>
+                    <div class="review-content" th:text="${review.review}"></div>
+                </div>
             </div>
-            
-            <div class="option-card">
-                <h2 class="option-title">Applications</h2>
-                <a th:href="@{/applicationProgress}" class="btn-primary">Track Progress</a>
+            <div th:if="${#lists.isEmpty(reviews)}" class="no-reviews">
+                You haven't submitted any probation reviews yet.
             </div>
         </div>
     </div>

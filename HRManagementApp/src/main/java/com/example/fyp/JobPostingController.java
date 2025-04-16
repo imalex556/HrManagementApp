@@ -24,6 +24,7 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -109,6 +110,7 @@ public class JobPostingController {
             @RequestParam String description,
             @RequestParam String location,
             @RequestParam String company,
+            @RequestParam String team,
             Model model
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -120,6 +122,7 @@ public class JobPostingController {
             jobData.put("description", description);
             jobData.put("location", location);
             jobData.put("company", company);
+            jobData.put("team", team);
             jobData.put("postedBy", email);
 
             firestore.collection("jobPostings").add(jobData);
@@ -1441,42 +1444,58 @@ public class JobPostingController {
             Model model) throws ExecutionException, InterruptedException {
         
         try {
+            logger.info("Starting offer acceptance - offerId: " + offerId);
             DocumentSnapshot offerSnapshot = firestore.collection("offers").document(offerId).get().get();
+
             if (!offerSnapshot.exists()) {
                 model.addAttribute("error", "Offer not found");
                 return "redirect:/applicationProgress";
             }
-            
+
             firestore.collection("offers").document(offerId)
-                    .update("status", "Accepted",
-                            "acceptedAt", FieldValue.serverTimestamp());
-            
+                    .update("status", "Accepted", "acceptedAt", FieldValue.serverTimestamp());
+
             String applicationId = offerSnapshot.getString("applicationId");
-            firestore.collection("applications").document(applicationId)
-                    .update("status", "Offer Accepted");
-            
             String jobId = offerSnapshot.getString("jobId");
-            String candidateName = offerSnapshot.getString("candidateName");
-            String jobTitle = offerSnapshot.getString("jobTitle");
+            String candidateEmail = offerSnapshot.getString("candidateEmail");
             
             DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
-            if (jobSnapshot.exists()) {
-                String hrEmail = jobSnapshot.getString("postedBy");
-                
-                Map<String, Object> hrNotification = new HashMap<>();
-                hrNotification.put("email", hrEmail);
-                hrNotification.put("message", candidateName + " has accepted the offer for " + jobTitle + ". Please check your email for details before accepting or declining the offer.");
-                hrNotification.put("timestamp", System.currentTimeMillis());
-                hrNotification.put("type", "offer_accepted");
-                hrNotification.put("read", false);
-                firestore.collection("notifications").add(hrNotification);
-            }
+            String jobTeam = jobSnapshot.getString("team");
+            String jobTitle = jobSnapshot.getString("title");
+
+            QuerySnapshot userQuery = firestore.collection("users")
+                    .whereEqualTo("email", candidateEmail)
+                    .get().get();
             
+            if (!userQuery.isEmpty()) {
+                DocumentSnapshot userDoc = userQuery.getDocuments().get(0);
+                firestore.collection("users").document(userDoc.getId())
+                        .update(
+                            "role", "NEW_JOINER",
+                            "team", jobTeam
+                        );
+                logger.info("Updated user role and team for: " + candidateEmail);
+            }
+
+            firestore.collection("applications").document(applicationId)
+                    .update("status", "Offer Accepted");
+
+            String hrEmail = jobSnapshot.getString("postedBy");
+            String candidateName = offerSnapshot.getString("candidateName");
+            
+            Map<String, Object> hrNotification = new HashMap<>();
+            hrNotification.put("email", hrEmail);
+            hrNotification.put("message", candidateName + " has accepted the offer for " + jobTitle);
+            hrNotification.put("timestamp", System.currentTimeMillis());
+            hrNotification.put("type", "offer_accepted");
+            hrNotification.put("read", false);
+            firestore.collection("notifications").add(hrNotification);
+
             if (notificationId != null && !notificationId.isEmpty()) {
                 firestore.collection("notifications").document(notificationId)
                         .update("read", true);
             }
-            
+
             model.addAttribute("message", "Offer accepted successfully!");
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error accepting offer", e);
@@ -1536,5 +1555,125 @@ public class JobPostingController {
         }
         
         return "redirect:/applicationProgress";
+    }
+    
+    @GetMapping("/probationReview")
+    public String probationReview(Model model) throws ExecutionException, InterruptedException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        List<QueryDocumentSnapshot> reviews = firestore.collection("probationReviews")
+                .whereEqualTo("reviewer", email)
+                .get().get().getDocuments();
+        
+        List<Map<String, Object>> reviewList = new ArrayList<>();
+        for (QueryDocumentSnapshot reviewDoc : reviews) {
+            Map<String, Object> review = new HashMap<>();
+            review.put("joinerName", reviewDoc.getString("joinerName"));
+            review.put("review", reviewDoc.getString("review"));
+            review.put("timestamp", reviewDoc.getTimestamp("timestamp").toDate());
+            reviewList.add(review);
+        }
+        
+        model.addAttribute("reviews", reviewList);
+        return "probation_review";
+    }
+    
+    @GetMapping("/selectNewJoinerForReview")
+    public String selectNewJoinerForReview(Model model) throws ExecutionException, InterruptedException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        try {
+            DocumentSnapshot employee = firestore.collection("users")
+                    .whereEqualTo("email", email)
+                    .get().get().getDocuments().get(0);
+            
+            if (!employee.exists()) {
+                model.addAttribute("error", "User not found");
+                return "redirect:/welcome";
+            }
+
+            String team = employee.getString("team");
+            if (team == null || team.isEmpty()) {
+                model.addAttribute("error", "You are not assigned to any team");
+                return "redirect:/welcome";
+            }
+
+            List<QueryDocumentSnapshot> newJoiners = firestore.collection("users")
+                    .whereEqualTo("role", "NEW_JOINER")
+                    .whereEqualTo("team", team)
+                    .get().get().getDocuments();
+
+            model.addAttribute("newJoiners", newJoiners);
+            
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error fetching new joiners", e);
+            model.addAttribute("error", "Error loading new joiners list");
+        }
+        
+        return "select_new_joiner";
+    }
+
+    @GetMapping("/leaveReview")
+    public String showLeaveReviewForm(
+            @RequestParam String joinerId, 
+            Model model) throws ExecutionException, InterruptedException {
+        
+        DocumentSnapshot joiner = firestore.collection("users").document(joinerId).get().get();
+        if (joiner.exists()) {
+            model.addAttribute("joinerName", joiner.getString("name"));
+            model.addAttribute("joinerId", joinerId);
+            return "leave_review";
+        }
+        return "redirect:/probationReview";
+    }
+
+    @PostMapping("/submitProbationReview")
+    public String submitProbationReview(
+            @RequestParam String joinerId,
+            @RequestParam String review,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String reviewerEmail = authentication.getName();
+        
+        Map<String, Object> reviewData = new HashMap<>();
+        reviewData.put("joinerId", joinerId);
+        reviewData.put("reviewer", reviewerEmail);
+        reviewData.put("review", review);
+        reviewData.put("timestamp", FieldValue.serverTimestamp());
+        
+        firestore.collection("probationReviews").add(reviewData);
+        
+        return "redirect:/probationReview";
+    }
+    
+    @GetMapping("/reviewHistory")
+    public String reviewHistory(Model model) throws ExecutionException, InterruptedException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        
+        List<QueryDocumentSnapshot> reviews = firestore.collection("probationReviews")
+                .whereEqualTo("reviewer", email)
+                .get().get().getDocuments();
+        
+        List<Map<String, Object>> reviewList = new ArrayList<>();
+        for (QueryDocumentSnapshot reviewDoc : reviews) {
+            String joinerId = reviewDoc.getString("joinerId");
+            DocumentSnapshot joinerDoc = firestore.collection("users").document(joinerId).get().get();
+            
+            Map<String, Object> review = new HashMap<>();
+            if(joinerDoc.exists()) {
+                review.put("joinerName", joinerDoc.getString("name"));
+                review.put("joinerEmail", joinerDoc.getString("email"));
+            }
+            review.put("review", reviewDoc.getString("review"));
+            review.put("timestamp", reviewDoc.getTimestamp("timestamp").toDate());
+            reviewList.add(review);
+        }
+        
+        model.addAttribute("reviews", reviewList);
+        return "review_history";
     }
 }

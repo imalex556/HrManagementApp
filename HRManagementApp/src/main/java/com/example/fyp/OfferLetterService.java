@@ -20,7 +20,6 @@ public class OfferLetterService {
         
         document.open();
 
-        // Add Company Logo
         try {
             Image logo = Image.getInstance("src/main/resources/static/images/logo.png");
             logo.scaleToFit(100, 100);
