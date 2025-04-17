@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Probation Reviews</title>
+    <title>Performance Report</title>
     <style>
         body {
             font-family: sans-serif;
@@ -33,7 +33,6 @@
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
             right: 0;
-			right: 0;
         }
         .dropdown-content a {
             color: black;
@@ -51,54 +50,40 @@
             max-width: 1200px;
             margin: 30px auto;
             padding: 20px;
-        }
-        .joiner-header {
             background: white;
-            padding: 20px;
             border-radius: 5px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .review-card {
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .reviewer-name {
-            color: #5cb85c;
-            font-weight: bold;
-        }
-        .review-date {
-            color: #666;
-            font-size: 0.9em;
-            float: right;
-        }
-        .review-content {
-            margin-top: 10px;
-            color: #333;
+        .report-content {
+            white-space: pre-wrap;
             line-height: 1.6;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #5cb85c;
         }
-        .generate-report-btn {
+        .download-btn {
             background-color: #5cb85c;
             color: white;
             padding: 12px 24px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-bottom: 20px;
-            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
         }
-        .generate-report-btn:hover {
+        .download-btn:hover {
             background-color: #4cae4c;
         }
-        .no-reviews {
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .joiner-info {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .joiner-info p {
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -116,30 +101,20 @@
     </div>
 
     <div class="container">
-        <div class="joiner-header">
-            <h2 th:text="${joiner.name + '''s Probation Reviews'}"></h2>
-            <p><strong>Email:</strong> <span th:text="${joiner.email}"></span></p>
+        <h2>Performance Report</h2>
+        
+        <div class="joiner-info">
+            <p><strong>Name:</strong> <span th:text="${joiner.name}"></span></p>
             <p><strong>Team:</strong> <span th:text="${joiner.team}"></span></p>
             <p><strong>Position:</strong> <span th:text="${joiner.role}"></span></p>
         </div>
-
-        <form th:action="@{/generatePerformanceReport}" method="post">
-            <input type="hidden" name="joinerId" th:value="${param.joinerId[0]}" />
-            <button type="submit" class="generate-report-btn">Generate Overall Performance Report</button>
-        </form>
-
-        <div th:if="${not #lists.isEmpty(reviews)}">
-            <div th:each="review : ${reviews}" class="review-card">
-                <div class="review-header">
-                    <span class="reviewer-name" th:text="${review.reviewerName}"></span>
-                    <span class="review-date" th:text="${#dates.format(review.date, 'dd MMM yyyy')}"></span>
-                </div>
-                <div class="review-content" th:text="${review.content}"></div>
-            </div>
-        </div>
-        <div th:if="${#lists.isEmpty(reviews)}" class="no-reviews">
-            <p>No reviews found for this new joiner.</p>
-        </div>
+        
+        <div class="report-content" th:text="${report}"></div>
+        
+        <a th:href="@{/downloadPerformanceReport(reportText=${report}, joinerName=${joiner.name})}" 
+           class="download-btn">
+            Download PDF Report
+        </a>
     </div>
 </body>
 </html>

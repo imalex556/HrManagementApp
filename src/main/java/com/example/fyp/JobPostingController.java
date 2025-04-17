@@ -1,5 +1,38 @@
 package com.example.fyp;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.pdf.PdfWriter;
+import org.springframework.core.io.ByteArrayResource;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import com.google.cloud.firestore.FieldValue;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
+import org.springframework.core.io.ByteArrayResource;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Collections;
 import com.example.fyp.OfferLetterService;
 import org.springframework.mail.javamail.JavaMailSender;
 import java.time.LocalDateTime;
@@ -1639,19 +1672,16 @@ public class JobPostingController {
         String reviewerEmail = authentication.getName();
         
         try {
-            // Get reviewer details
             DocumentSnapshot reviewerDoc = firestore.collection("users")
                     .whereEqualTo("email", reviewerEmail)
                     .get().get().getDocuments().get(0);
             String reviewerName = reviewerDoc.getString("name");
 
-            // Get joiner details
             DocumentSnapshot joinerDoc = firestore.collection("users").document(joinerId).get().get();
             String joinerName = joinerDoc.getString("name");
             String joinerEmail = joinerDoc.getString("email");
             String joinerTeam = joinerDoc.getString("team");
 
-            // Save review
             Map<String, Object> reviewData = new HashMap<>();
             reviewData.put("joinerId", joinerId);
             reviewData.put("reviewer", reviewerEmail);
@@ -1659,7 +1689,6 @@ public class JobPostingController {
             reviewData.put("timestamp", FieldValue.serverTimestamp());
             firestore.collection("probationReviews").add(reviewData);
 
-            // Find HR to notify
             List<QueryDocumentSnapshot> applications = firestore.collection("applications")
                     .whereEqualTo("email", joinerEmail)
                     .whereEqualTo("status", "Offer Accepted")
@@ -1672,7 +1701,6 @@ public class JobPostingController {
                 if (jobSnapshot.exists()) {
                     String hrEmail = jobSnapshot.getString("postedBy");
                     
-                    // Create HR notification
                     Map<String, Object> notification = new HashMap<>();
                     notification.put("email", hrEmail);
                     notification.put("message", reviewerName + " has left a probation review for " + joinerName);
@@ -1722,23 +1750,21 @@ public class JobPostingController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String hrEmail = authentication.getName();
         
-        // Get all jobs posted by this HR
         List<QueryDocumentSnapshot> jobs = firestore.collection("jobPostings")
                 .whereEqualTo("postedBy", hrEmail)
                 .get().get().getDocuments();
         
-        // Convert Set to List for Firestore query
         Set<String> teams = jobs.stream()
                 .map(job -> job.getString("team"))
                 .collect(Collectors.toSet());
         
-        List<String> teamList = new ArrayList<>(teams); // Convert Set to List
+        List<String> teamList = new ArrayList<>(teams);
         
         List<QueryDocumentSnapshot> joiners = new ArrayList<>();
         if (!teamList.isEmpty()) {
             joiners = firestore.collection("users")
                     .whereEqualTo("role", "NEW_JOINER")
-                    .whereIn("team", teamList) // Now using List instead of Set
+                    .whereIn("team", teamList)
                     .get().get().getDocuments();
         }
         
@@ -1779,5 +1805,152 @@ public class JobPostingController {
         model.addAttribute("joiner", joinerDetails);
         model.addAttribute("reviews", reviews);
         return "joiner_review_details";
+    }
+    
+    @PostMapping("/generatePerformanceReport")
+    public String generatePerformanceReport(
+            @RequestParam String joinerId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        try {
+            List<QueryDocumentSnapshot> reviewDocs = firestore.collection("probationReviews")
+                    .whereEqualTo("joinerId", joinerId)
+                    .get().get().getDocuments();
+
+            if (reviewDocs.isEmpty()) {
+                model.addAttribute("error", "No reviews found for this employee");
+                return "redirect:/viewJoinerReviews?joinerId=" + joinerId;
+            }
+
+            DocumentSnapshot joinerDoc = firestore.collection("users").document(joinerId).get().get();
+            Map<String, Object> joiner = new HashMap<>();
+            joiner.put("name", joinerDoc.getString("name"));
+            joiner.put("email", joinerDoc.getString("email"));
+            joiner.put("team", joinerDoc.getString("team"));
+            joiner.put("role", joinerDoc.getString("role"));
+
+            StringBuilder promptBuilder = new StringBuilder();
+            promptBuilder.append("Create a concise performance summary based on these probation reviews. ");
+            promptBuilder.append("Structure it in 3 paragraphs without bullet points:\n\n");
+            promptBuilder.append("1. Key strengths (combine all positive feedback into one cohesive paragraph)\n");
+            promptBuilder.append("2. Areas for improvement (combine all constructive feedback into one paragraph)\n");
+            promptBuilder.append("3. Overall assessment (1-2 sentences summarizing their probation period)\n\n");
+            promptBuilder.append("Do not mention any reviewer names. Keep it professional but concise. Here are the reviews:\n\n");
+
+            for (QueryDocumentSnapshot doc : reviewDocs) {
+                promptBuilder.append("- ").append(doc.getString("review")).append("\n");
+            }
+
+            String apiKey = "AIzaSyDsRumg-_huAG-en85c9YFXfAhN03VOnqE";
+            String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey;
+
+            JsonObject requestBody = new JsonObject();
+            JsonArray contents = new JsonArray();
+            JsonObject content = new JsonObject();
+            JsonArray parts = new JsonArray();
+            JsonObject part = new JsonObject();
+            part.addProperty("text", promptBuilder.toString());
+            parts.add(part);
+            content.add("parts", parts);
+            contents.add(content);
+            requestBody.add("contents", contents);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(requestBody), headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(geminiUrl, entity, String.class);
+
+            JsonObject jsonResponse = JsonParser.parseString(response.getBody()).getAsJsonObject();
+            JsonArray candidates = jsonResponse.getAsJsonArray("candidates");
+            
+            if (candidates == null || candidates.size() == 0) {
+                throw new RuntimeException("No response from Gemini API");
+            }
+
+            JsonObject candidate = candidates.get(0).getAsJsonObject();
+            JsonObject contentResponse = candidate.getAsJsonObject("content");
+            JsonArray partsResponse = contentResponse.getAsJsonArray("parts");
+            String generatedReport = partsResponse.get(0).getAsJsonObject().get("text").getAsString();
+
+            String reportId = UUID.randomUUID().toString();
+            Map<String, Object> reportData = new HashMap<>();
+            reportData.put("joinerId", joinerId);
+            reportData.put("reportText", generatedReport);
+            reportData.put("generatedAt", FieldValue.serverTimestamp());
+            firestore.collection("performanceReports").document(reportId).set(reportData);
+
+            model.addAttribute("joiner", joiner);
+            model.addAttribute("report", generatedReport);
+            return "performance_report";
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error generating performance report", e);
+            model.addAttribute("error", "Failed to generate performance report: " + e.getMessage());
+            return "redirect:/viewJoinerReviews?joinerId=" + joinerId;
+        }
+    }
+
+    @GetMapping("/downloadPerformanceReport")
+    public ResponseEntity<ByteArrayResource> downloadPerformanceReport(
+            @RequestParam String reportText,
+            @RequestParam String joinerName) throws IOException, DocumentException {
+        
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, outputStream);
+        
+        document.open();
+        
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, BaseColor.DARK_GRAY);
+        Paragraph title = new Paragraph("Performance Evaluation Report", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(20);
+        document.add(title);
+        
+        Font infoFont = FontFactory.getFont(FontFactory.HELVETICA, 12, BaseColor.BLACK);
+        Paragraph employeeInfo = new Paragraph();
+        employeeInfo.add(new Chunk("Employee: ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12)));
+        employeeInfo.add(new Chunk(joinerName, infoFont));
+        employeeInfo.add(Chunk.NEWLINE);
+        employeeInfo.add(new Chunk("Date: ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12)));
+        employeeInfo.add(new Chunk(new SimpleDateFormat("MMMM dd, yyyy").format(new Date()), infoFont));
+        employeeInfo.setAlignment(Element.ALIGN_CENTER);
+        employeeInfo.setSpacingAfter(30);
+        document.add(employeeInfo);
+        
+        Font contentFont = FontFactory.getFont(FontFactory.HELVETICA, 12, BaseColor.BLACK);
+        String[] sections = reportText.split("\n\n");
+        
+        for (String section : sections) {
+            if (section.trim().isEmpty()) continue;
+            
+            if (section.matches("^[A-Z][a-zA-Z ]+:$")) {
+                Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, BaseColor.DARK_GRAY);
+                Paragraph header = new Paragraph(section.replace(":", ""), sectionFont);
+                header.setSpacingBefore(15);
+                header.setSpacingAfter(10);
+                document.add(header);
+            } else {
+                Paragraph content = new Paragraph(section, contentFont);
+                content.setSpacingAfter(5);
+                document.add(content);
+            }
+        }
+        
+        document.close();
+        
+        byte[] pdfBytes = outputStream.toByteArray();
+        ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, 
+                "attachment; filename=" + joinerName.replace(" ", "_") + "_Performance_Report.pdf");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/pdf");
+        
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(pdfBytes.length)
+                .body(resource);
     }
 }
