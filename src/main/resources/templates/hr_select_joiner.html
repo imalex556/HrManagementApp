@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Select New Joiner</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .joiner-listing {
+            background: white;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .joiner-info div {
+            margin: 5px 0;
+        }
+        .joiner-name {
+            font-weight: bold;
+            color: #5cb85c;
+        }
+        .review-button {
+            background: #5cb85c;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .no-joiners {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+	<div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/notifications}" class="notification-icon">
+	                    Notifications
+	                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
+	                          class="badge" th:text="${#lists.size(notifications)}"></span>
+	                </a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Select New Joiner for Review</h2>
+        <div th:if="${newJoiners}">
+            <div th:each="joiner : ${newJoiners}" class="joiner-listing">
+                <div class="joiner-info">
+                    <div class="joiner-name" th:text="${joiner.get('name')}"></div>
+                    <div>Email: <span th:text="${joiner.get('email')}"></span></div>
+                    <div>Team: <span th:text="${joiner.get('team')}"></span></div>
+                </div>
+                <form th:action="@{/viewJoinerReviews}" method="get">
+                    <input type="hidden" name="joinerId" th:value="${joiner.id}">
+                    <button type="submit" class="review-button">View Reviews</button>
+                </form>
+            </div>
+        </div>
+        <div th:unless="${newJoiners}" class="no-joiners">
+            No new joiners available for review.
+        </div>
+    </div>
+</body>
+</html>

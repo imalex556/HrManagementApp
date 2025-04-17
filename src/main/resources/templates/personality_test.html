@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Personality Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .navbar a:hover {
+            background-color: #4cae4c;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 600px;
+            margin: 50px auto;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .question label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .response-scale {
+            display: flex;
+            justify-content: space-between;
+        }
+        .response-scale label {
+            flex: 1;
+            text-align: center;
+        }
+        button {
+            background-color: #5cb85c;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .notification-icon {
+            position: relative;
+            display: inline-block;
+        }
+        .notification-icon .badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            padding: 5px 10px;
+            border-radius: 50%;
+            background-color: red;
+            color: white;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropbtn {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            cursor: pointer;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            white-space: nowrap;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/notifications}" class="notification-icon">
+                    Notifications
+                    <span th:if="${#lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
+                </a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Personality Test</h2>
+        <p>Please answer the following questions to be able to move to the next stage if successful.</p>
+        <form th:action="@{/submitPersonalityTest}" method="post">
+            <div th:each="question, iterStat : ${questions}" class="question">
+                <label th:for="'question' + ${iterStat.index}" th:text="'Q' + (${iterStat.index + 1}) + '. ' + ${question}"></label>
+                <div class="response-scale">
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="strongly agree" required> Strongly Agree
+                    </label>
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="agree"> Agree
+                    </label>
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="slightly agree"> Slightly Agree
+                    </label>
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="neutral"> Neutral
+                    </label>
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="slightly disagree"> Slightly Disagree
+                    </label>
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="disagree"> Disagree
+                    </label>
+                    <label>
+                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="strongly disagree"> Strongly Disagree
+                    </label>
+                </div>
+            </div>
+            <button type="submit">Submit Test</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{"properties": [
+  {
+    "name": "firebase.config.path",
+    "type": "java.lang.String",
+    "description": "A description for 'firebase.config.path'"
+  },
+  {
+    "name": "google",
+    "type": "java.lang.String",
+    "description": "A description for 'google'"
+  }
+]}

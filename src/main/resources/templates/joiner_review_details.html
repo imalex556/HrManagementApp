@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Probation Reviews</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .joiner-header {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .review-card {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .reviewer-name {
+            color: #5cb85c;
+            font-weight: bold;
+        }
+        .review-date {
+            color: #666;
+            font-size: 0.9em;
+            float: right;
+        }
+        .review-content {
+            margin-top: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="joiner-header">
+            <!-- Fixed expression syntax -->
+            <h2 th:text="${joiner.name + '''s Probation Reviews'}"></h2>
+            <p>Email: <span th:text="${joiner.email}"></span></p>
+            <p>Team: <span th:text="${joiner.team}"></span></p>
+        </div>
+        
+        <div th:if="${not #lists.isEmpty(reviews)}">
+            <div th:each="review : ${reviews}" class="review-card">
+                <div class="review-header">
+                    <span class="reviewer-name" th:text="${review.reviewerName}"></span>
+                    <span class="review-date" th:text="${#dates.format(review.date, 'dd MMM yyyy')}"></span>
+                </div>
+                <div class="review-content" th:text="${review.content}"></div>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(reviews)}">
+            <p>No reviews found for this new joiner.</p>
+        </div>
+    </div>
+</body>
+</html>

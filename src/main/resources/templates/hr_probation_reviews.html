@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>HR Probation Reviews</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .joiner-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .joiner-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .joiner-name {
+            color: #5cb85c;
+            font-size: 1.4em;
+            margin: 0;
+        }
+
+        .joiner-details {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+
+        .review-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #5cb85c;
+        }
+
+        .review-content {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .review-meta {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .no-reviews {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+	<div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/notifications}" class="notification-icon">
+	                    Notifications
+	                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
+	                          class="badge" th:text="${#lists.size(notifications)}"></span>
+	                </a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Probation Reviews</h1>
+        
+        <div th:each="joiner : ${groupedReviews}">
+            <div class="joiner-card">
+                <div class="joiner-header">
+                    <h2 class="joiner-name" th:text="${joiner.joinerName}"></h2>
+                    <div class="joiner-details">
+                        <div>Email: <span th:text="${joiner.joinerEmail}"></span></div>
+                        <div>Team: <span th:text="${joiner.team}"></span></div>
+                    </div>
+                </div>
+                
+                <div th:if="${#lists.isEmpty(joiner.reviews)}" class="no-reviews">
+                    No reviews submitted yet for this new joiner.
+                </div>
+                
+                <div th:each="review : ${joiner.reviews}" class="review-card">
+                    <div class="review-content" th:text="${review.review}"></div>
+                    <div class="review-meta">
+                        Reviewed by: 
+                        <span th:text="${review.reviewerName} + ' (' + ${review.reviewerEmail} + ')'"></span>
+                        <br>
+                        On: <span th:text="${#dates.format(review.timestamp, 'dd MMM yyyy HH:mm')}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

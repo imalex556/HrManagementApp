@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Manage Interviews</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #5cb85c;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            background-color: #4cae4c;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #ddd;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .job-listing {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .job-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #5cb85c;
+        }
+
+        .job-details {
+            margin-top: 10px;
+        }
+
+        .job-details p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .view-button {
+            background-color: #5cb85c;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .view-button:hover {
+            background-color: #4cae4c;
+        }
+
+        .interview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .interview-table th, .interview-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .interview-table th {
+            background-color: #5cb85c;
+            color: white;
+        }
+
+        .interview-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .interview-table tr:hover {
+            background-color: #e9e9e9;
+        }
+
+        .status-button {
+            padding: 8px 12px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .pass-button {
+            background-color: #5cb85c;
+            color: white;
+        }
+
+        .pass-button:hover {
+            background-color: #4cae4c;
+        }
+
+        .fail-button {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        .fail-button:hover {
+            background-color: #c9302c;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background-color: #ddd;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .tab.active {
+            background-color: #5cb85c;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .salary-input {
+            padding: 6px;
+            margin: 2px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+        }
+
+        .salary-input:invalid {
+            border-color: #ff4444;
+            box-shadow: 0 0 5px rgba(255, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/notifications}">Notifications</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Manage Interviews</h2>
+        
+        <div th:if="${message}" class="message success" th:text="${message}"></div>
+        <div th:if="${error}" class="message error" th:text="${error}"></div>
+        
+        <div class="tab-container">
+            <div class="tab active" onclick="showTab('upcoming')">Upcoming Interviews</div>
+            <div class="tab" onclick="showTab('completed')">Completed Interviews</div>
+            <div class="tab" onclick="showTab('all')">All Interviews</div>
+        </div>
+        
+        <div id="upcoming" class="tab-content active">
+            <div th:if="${jobs != null and not jobs.empty}">
+                <h3>Select a Job:</h3>
+                <div th:each="job : ${jobs}" class="job-listing">
+                    <div class="job-title" th:text="${job.get('title')}"></div>
+                    <div class="job-details">
+                        <p><strong>Company:</strong> <span th:text="${job.get('company')}"></span></p>
+                        <p><strong>Location:</strong> <span th:text="${job.get('location')}"></span></p>
+                        <a th:href="@{/viewJobInterviews(jobId=${job.id})}" class="view-button">View Upcoming Interviews</a>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${interviews != null and not interviews.empty}">
+                <h3>Upcoming Interviews for: <span th:text="${jobTitle}"></span></h3>
+                <table class="interview-table">
+                    <thead>
+                        <tr>
+                            <th>Candidate Name</th>
+                            <th>Email</th>
+                            <th>Interview Date</th>
+                            <th>Type</th>
+                            <th>Location/Details</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="interview : ${interviews}">
+                            <td th:text="${interview.get('candidateName')}"></td>
+                            <td th:text="${interview.get('candidateEmail')}"></td>
+                            <td th:text="${interview.get('interviewDateTime')}"></td>
+                            <td th:text="${interview.get('interviewType')}"></td>
+                            <td th:text="${interview.get('location') ?: 'N/A'}"></td>
+                            <td th:text="${interview.get('status')}"></td>
+                            <td>
+                                <form th:action="@{/generateOfferLetter}" method="post" style="display: inline-block;">
+                                    <input type="hidden" name="interviewId" th:value="${interview.id}">
+                                    <input type="hidden" name="jobId" th:value="${jobId}">
+                                    <input type="hidden" name="candidateEmail" th:value="${interview.get('candidateEmail')}">
+                                    <input type="number" class="salary-input" name="salary" 
+                                           step="0.01" 
+                                           min="0.01" 
+                                           required 
+                                           placeholder="Salary"
+                                           title="Please enter a valid salary amount">
+                                    <button type="submit" class="status-button pass-button">Pass & Generate Offer</button>
+                                </form>
+                                
+                                <form th:action="@{/updateInterviewStatus}" method="post" style="display: inline-block; margin-left: 5px;">
+                                    <input type="hidden" name="interviewId" th:value="${interview.id}">
+                                    <input type="hidden" name="jobId" th:value="${jobId}">
+                                    <button type="submit" name="status" value="Failed" class="status-button fail-button">Fail</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div th:if="${(interviews == null or interviews.empty) and jobTitle != null}">
+                <p>No upcoming interviews scheduled for this job.</p>
+            </div>
+        </div>
+        
+        <div id="completed" class="tab-content">
+            <div th:if="${completedInterviews != null and not completedInterviews.empty}">
+                <h3>Completed Interviews</h3>
+                <table class="interview-table">
+                    <thead>
+                        <tr>
+                            <th>Candidate Name</th>
+                            <th>Job Title</th>
+                            <th>Interview Date</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="interview : ${completedInterviews}">
+                            <td th:text="${interview.candidateName}"></td>
+                            <td th:text="${interview.jobTitle}"></td>
+                            <td th:text="${interview.interviewDateTime}"></td>
+                            <td th:text="${interview.status}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div th:if="${completedInterviews == null or completedInterviews.empty}">
+                <p>No completed interviews found.</p>
+            </div>
+        </div>
+        
+        <div id="all" class="tab-content">
+            <div th:if="${allInterviews != null and not allInterviews.empty}">
+                <h3>All Interviews</h3>
+                <table class="interview-table">
+                    <thead>
+                        <tr>
+                            <th>Candidate Name</th>
+                            <th>Job Title</th>
+                            <th>Interview Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="interview : ${allInterviews}">
+                            <td th:text="${interview.candidateName}"></td>
+                            <td th:text="${interview.jobTitle}"></td>
+                            <td th:text="${interview.interviewDateTime}"></td>
+                            <td th:text="${interview.status}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div th:if="${allInterviews == null or allInterviews.empty}">
+                <p>No interviews found.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            if (tabId === 'upcoming') {
+                window.location.href = '/viewInterviews';
+            } else if (tabId === 'completed') {
+                window.location.href = '/viewInterviews?show=completed';
+            } else if (tabId === 'all') {
+                window.location.href = '/viewInterviews?show=all';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const show = urlParams.get('show');
+            
+            if (show === 'completed') {
+                showTab('completed');
+            } else if (show === 'all') {
+                showTab('all');
+            }
+        });
+    </script>
+</body>
+</html>
