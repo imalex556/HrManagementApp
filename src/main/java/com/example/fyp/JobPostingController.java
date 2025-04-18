@@ -325,14 +325,13 @@ public class JobPostingController {
     }
 
     @GetMapping("/viewApplicationDetails")
-    public String viewApplicationDetails(@RequestParam String applicationId, @RequestParam String jobId, Model model) throws ExecutionException, InterruptedException, IOException {
-        logger.log(Level.INFO, "Fetching application with ID: {0}", applicationId);
+    public String viewApplicationDetails(
+            @RequestParam String applicationId, 
+            @RequestParam String jobId, 
+            Model model) throws ExecutionException, InterruptedException, IOException {
+        
         DocumentSnapshot applicationSnapshot = firestore.collection("applications").document(applicationId).get().get();
-        logger.log(Level.INFO, "Application data: {0}", applicationSnapshot.getData());
-
-        logger.log(Level.INFO, "Fetching job with ID: {0}", jobId);
         DocumentSnapshot jobSnapshot = firestore.collection("jobPostings").document(jobId).get().get();
-        logger.log(Level.INFO, "Job data: {0}", jobSnapshot.getData());
 
         if (applicationSnapshot.exists() && jobSnapshot.exists()) {
             String applicantName = applicationSnapshot.getString("name");
@@ -352,7 +351,6 @@ public class JobPostingController {
 
             return "view_application_details";
         } else {
-            logger.log(Level.SEVERE, "Application or Job not found.");
             model.addAttribute("error", "Application or Job not found.");
             return "view_applications_for_job";
         }
@@ -1952,5 +1950,100 @@ public class JobPostingController {
                 .headers(headers)
                 .contentLength(pdfBytes.length)
                 .body(resource);
+    }
+    
+    @GetMapping("/recruitmentAnalytics")
+    public String showRecruitmentAnalytics(
+            @RequestParam(required = false) String jobId,
+            Model model) throws ExecutionException, InterruptedException {
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String hrEmail = authentication.getName();
+
+        // 1. Get all jobs posted by this HR
+        List<QueryDocumentSnapshot> hrJobs = firestore.collection("jobPostings")
+                .whereEqualTo("postedBy", hrEmail)
+                .get().get().getDocuments();
+        model.addAttribute("hrJobs", hrJobs);
+
+        // Get list of job IDs posted by this HR
+        List<String> hrJobIds = hrJobs.stream()
+                .map(DocumentSnapshot::getId)
+                .collect(Collectors.toList());
+
+        // 2. Get applications based on filter and HR's jobs
+        List<QueryDocumentSnapshot> applications = new ArrayList<>();
+        if (!hrJobIds.isEmpty()) {
+            if (jobId != null && !jobId.isEmpty() && hrJobIds.contains(jobId)) {
+                applications = firestore.collection("applications")
+                        .whereEqualTo("jobId", jobId)
+                        .get().get().getDocuments();
+            } else {
+                applications = firestore.collection("applications")
+                        .whereIn("jobId", hrJobIds)
+                        .get().get().getDocuments();
+            }
+        }
+
+        // 3. Get all job titles for the HR
+        Map<String, String> jobTitles = hrJobs.stream()
+                .collect(Collectors.toMap(
+                    DocumentSnapshot::getId,
+                    job -> job.getString("title"))
+                );
+
+        Map<String, Object> analyticsData = processRecruitmentAnalytics(applications, jobTitles);
+        model.addAttribute("analyticsData", new Gson().toJson(analyticsData));
+        model.addAttribute("selectedJob", jobId);
+
+        return "recruitment_analytics";
+    }
+
+    private Map<String, Object> processRecruitmentAnalytics(List<QueryDocumentSnapshot> applications, 
+                                                         Map<String, String> jobTitles) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 1. Funnel data
+        int applied = applications.size();
+        int shortlisted = 0;
+        int interviewed = 0;
+        int offered = 0;
+        int hired = 0;
+        
+        Map<String, Integer> statusCounts = new HashMap<>();
+        
+        for (QueryDocumentSnapshot app : applications) {
+            String status = app.getString("status");
+            if (status == null) status = "Applied";
+            
+            // Count statuses for pie chart
+            statusCounts.put(status, statusCounts.getOrDefault(status, 0) + 1);
+            
+            // Funnel counts
+            if (status.equals("Shortlisted")) shortlisted++;
+            if (status.equals("Interview Scheduled")) interviewed++;
+            if (status.equals("Interview Passed")) interviewed++;
+            if (status.equals("Offer Sent")) offered++;
+            if (status.equals("Offer Accepted")) hired++;
+        }
+        
+        result.put("funnel", Map.of(
+            "labels", new String[]{"Applied", "Shortlisted", "Interviewed", "Offered", "Hired"},
+            "values", new int[]{applied, shortlisted, interviewed, offered, hired},
+            "colors", new String[]{"#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"}
+        ));
+        
+        // 2. Status distribution data
+        List<Map<String, Object>> statusData = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
+            statusData.add(Map.of(
+                "name", entry.getKey(),
+                "value", entry.getValue()
+            ));
+        }
+        
+        result.put("statuses", statusData);
+        
+        return result;
     }
 }
