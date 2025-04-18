@@ -4,78 +4,115 @@
     <title>HR Probation Reviews</title>
     <style>
         body {
-            font-family: sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
+            color: #333;
         }
-
         .navbar {
-            background-color: #5cb85c;
-            padding: 10px;
+            background-color: #2c3e50;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
         .navbar a {
-            color: #fff;
+            color: white;
             text-decoration: none;
-            padding: 10px;
-            transition: background-color 0.3s ease;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
-
+        .navbar a:hover {
+            color: #5cb85c;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            z-index: 1;
+            right: 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .dropdown-content a {
+            color: #2c3e50;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+        }
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #5cb85c;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
         .container {
             max-width: 1200px;
-            margin: 30px auto;
-            padding: 20px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 2px solid #5cb85c;
+            padding-bottom: 10px;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+        }
         .joiner-card {
             background: white;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             margin-bottom: 30px;
         }
-
         .joiner-header {
             border-bottom: 2px solid #eee;
             padding-bottom: 15px;
             margin-bottom: 15px;
         }
-
         .joiner-name {
-            color: #5cb85c;
+            color: #2c3e50;
             font-size: 1.4em;
             margin: 0;
         }
-
         .joiner-details {
             color: #666;
             font-size: 0.9em;
             margin: 5px 0;
         }
-
         .review-card {
             background: #f8f9fa;
             padding: 15px;
             margin: 15px 0;
             border-radius: 5px;
-            border-left: 4px solid #5cb85c;
+            border-left: 4px solid #2c3e50;
         }
-
         .review-content {
             color: #333;
             line-height: 1.6;
             margin-bottom: 10px;
         }
-
         .review-meta {
             font-size: 0.85em;
             color: #666;
         }
-
         .no-reviews {
             text-align: center;
             color: #666;
@@ -84,52 +121,7 @@
             border-radius: 5px;
             margin-top: 20px;
         }
-		
-		.dropdown {
-		            position: relative;
-		            display: inline-block;
-		        }
-		        
-		        .dropdown-content {
-		            display: none;
-		            position: absolute;
-		            background-color: #f9f9f9;
-		            min-width: 160px;
-		            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-		            z-index: 1;
-		            right: 0;
-		        }
-		        
-		        .dropdown-content a {
-		            color: black;
-		            padding: 12px 16px;
-		            text-decoration: none;
-		            display: block;
-		        }
-		        
-		        .dropdown-content a:hover {
-		            background-color: #ddd;
-		        }
-		        
-		        .dropdown:hover .dropdown-content {
-		            display: block;
-		        }
-		        
-		        .notification-icon {
-		            position: relative;
-		        }
-		        
-		        .badge {
-		            position: absolute;
-		            top: -5px;
-		            right: -5px;
-		            background-color: red;
-		            color: white;
-		            border-radius: 50%;
-		            padding: 2px 6px;
-		            font-size: 12px;
-		        }
-		    </style>
+    </style>
 </head>
 <body>
 	<div class="navbar">
@@ -138,19 +130,13 @@
 	            <a class="dropbtn">Menu</a>
 	            <div class="dropdown-content">
 	                <a th:href="@{/profile}">Profile</a>
-	                <a th:href="@{/notifications}" class="notification-icon">
-	                    Notifications
-	                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-	                          class="badge" th:text="${#lists.size(notifications)}"></span>
-	                </a>
+	                <a th:href="@{/notifications}">Notifications</a>
 	                <a th:href="@{/}">Logout</a>
 	            </div>
         </div>
     </div>
-
     <div class="container">
         <h1>Probation Reviews</h1>
-        
         <div th:each="joiner : ${groupedReviews}">
             <div class="joiner-card">
                 <div class="joiner-header">
@@ -160,11 +146,9 @@
                         <div>Team: <span th:text="${joiner.team}"></span></div>
                     </div>
                 </div>
-                
                 <div th:if="${#lists.isEmpty(joiner.reviews)}" class="no-reviews">
                     No reviews submitted yet for this new joiner.
                 </div>
-                
                 <div th:each="review : ${joiner.reviews}" class="review-card">
                     <div class="review-content" th:text="${review.review}"></div>
                     <div class="review-meta">

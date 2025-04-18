@@ -625,8 +625,8 @@ public class JobPostingController {
 
             List<String> questions = SentinoUtils.processSentinoQuestionsResponse(responseBody);
 
-            if (questions.size() > 1) {
-                questions = questions.subList(0, 1);
+            if (questions.size() > 20) {
+                questions = questions.subList(0, 20);
             }
 
 
@@ -802,7 +802,7 @@ public class JobPostingController {
             double average = total / count;
             logger.info("Calculated average score: " + average);
             
-            return average >= 0.0;
+            return average >= 0.3;
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error parsing Sentino response", e);

@@ -4,24 +4,32 @@
     <title>Recruitment Analytics</title>
     <style>
         body {
-            font-family: sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
+            color: #333;
         }
         
         .navbar {
-            background-color: #5cb85c;
-            padding: 10px;
+            background-color: #2c3e50;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .navbar a {
             color: white;
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar a:hover {
+            color: #5cb85c;
         }
         
         .dropdown {
@@ -32,22 +40,26 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
             z-index: 1;
             right: 0;
+            border-radius: 8px;
+            overflow: hidden;
         }
         
         .dropdown-content a {
-            color: black;
+            color: #2c3e50;
             padding: 12px 16px;
             text-decoration: none;
             display: block;
+            transition: all 0.3s ease;
         }
         
         .dropdown-content a:hover {
-            background-color: #ddd;
+            background-color: #f1f1f1;
+            color: #5cb85c;
         }
         
         .dropdown:hover .dropdown-content {
@@ -56,70 +68,179 @@
         
         .container {
             max-width: 1200px;
-            margin: 30px auto;
-            padding: 20px;
+            margin: 40px auto;
+            padding: 30px;
             background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 2px solid #5cb85c;
+            padding-bottom: 10px;
+            display: inline-block;
         }
         
         .chart-container {
-            margin: 30px 0;
-            padding: 20px;
-            border: 1px solid #eee;
-            border-radius: 5px;
+            margin: 40px 0;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
         .chart-title {
-            color: #5cb85c;
-            margin-bottom: 15px;
-            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border-left: 4px solid #5cb85c;
+            padding-left: 15px;
         }
-        
+
         .dropdown {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         
         select {
-            padding: 8px;
-            border-radius: 4px;
+            padding: 12px 15px;
+            border-radius: 8px;
             border: 1px solid #ddd;
             font-size: 16px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            width: 300px;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #5cb85c;
+            box-shadow: 0 0 0 3px rgba(92,184,92,0.2);
         }
         
         label {
-            font-weight: bold;
-            margin-right: 10px;
+            font-weight: 600;
+            margin-right: 15px;
+            color: #2c3e50;
         }
         
         .tooltip {
             position: absolute;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border-radius: 4px;
-            pointer-events: none;
+            padding: 15px;
+            background: rgba(40, 40, 40, 0.95);
+            color: #fff;
+            border-radius: 10px;
             font-size: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+            z-index: 100;
+            max-width: 250px;
+        }
+        
+        .tooltip h4 {
+            margin: 0 0 8px 0;
+            color: #5cb85c;
+        }
+        
+        .tooltip p {
+            margin: 0;
+        }
+        
+        .tooltip small {
+            display: block;
+            margin-top: 8px;
+            opacity: 0.8;
         }
         
         .no-data {
             text-align: center;
-            color: #666;
-            padding: 40px;
+            color: #6c757d;
+            padding: 60px;
+            font-size: 1.3em;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             font-size: 1.2em;
+            color: #2c3e50;
+            border-radius: 15px;
+            z-index: 10;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #5cb85c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes barRise {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .axis text {
+            font-size: 12px;
+            fill: #6c757d;
+        }
+        
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #e9ecef;
+            shape-rendering: crispEdges;
         }
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <a th:href="@{/welcome}">Home</a>
-        <div class="dropdown">
-            <a class="dropbtn">Menu</a>
-            <div class="dropdown-content">
-                <a th:href="@{/profile}">Profile</a>
-                <a th:href="@{/notifications}">Notifications</a>
-                <a th:href="@{/}">Logout</a>
-            </div>
+	<div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/notifications}">Notifications</a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
         </div>
     </div>
 
@@ -156,172 +277,172 @@
         </div>
     </div>
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    
-    <script>
-        const tooltip = d3.select("body").append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
-        
-        let recruitmentData = {
-            funnel: {
-                labels: ["Applied", "Shortlisted", "Interviewed", "Offered", "Hired"],
-                values: [0, 0, 0, 0, 0],
-                colors: ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"]
-            },
-            statuses: []
-        };
+	<script src="https://d3js.org/d3.v7.min.js"></script>
+	    
+	    <script>
+	        const tooltip = d3.select("body").append("div")
+	            .attr("class", "tooltip")
+	            .style("opacity", 0);
+	        
+	        let recruitmentData = {
+	            funnel: {
+	                labels: ["Applied", "Shortlisted", "Interviewed", "Offered", "Hired"],
+	                values: [0, 0, 0, 0, 0],
+	                colors: ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"]
+	            },
+	            statuses: []
+	        };
 
-        function fetchData() {
-            try {
-                const dataFromBackend = JSON.parse(document.getElementById("analytics-data").textContent);
-                recruitmentData = dataFromBackend;
-            } catch(e) {
-                console.error("Error parsing analytics data:", e);
-            }
-            
-            drawFunnelChart();
-            drawStatusChart();
-        }
+	        function fetchData() {
+	            try {
+	                const dataFromBackend = JSON.parse(document.getElementById("analytics-data").textContent);
+	                recruitmentData = dataFromBackend;
+	            } catch(e) {
+	                console.error("Error parsing analytics data:", e);
+	            }
+	            
+	            drawFunnelChart();
+	            drawStatusChart();
+	        }
 
-        function drawFunnelChart() {
-            const margin = {top: 40, right: 30, bottom: 60, left: 60};
-            const width = 800 - margin.left - margin.right;
-            const height = 400 - margin.top - margin.bottom;
-            
-            d3.select("#funnel-chart").html("");
-            
-            const svg = d3.select("#funnel-chart")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
+	        function drawFunnelChart() {
+	            const margin = {top: 40, right: 30, bottom: 60, left: 60};
+	            const width = 800 - margin.left - margin.right;
+	            const height = 400 - margin.top - margin.bottom;
+	            
+	            d3.select("#funnel-chart").html("");
+	            
+	            const svg = d3.select("#funnel-chart")
+	                .append("svg")
+	                .attr("width", width + margin.left + margin.right)
+	                .attr("height", height + margin.top + margin.bottom)
+	                .append("g")
+	                .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            const maxValue = d3.max(recruitmentData.funnel.values);
-            const funnelWidth = width / recruitmentData.funnel.labels.length;
-            
-            recruitmentData.funnel.labels.forEach((label, i) => {
-                const value = recruitmentData.funnel.values[i];
-                const segmentHeight = height * (value / (maxValue || 1));
-                const segmentWidth = funnelWidth * 0.8;
-                
-                svg.append("rect")
-                    .attr("x", i * funnelWidth + (funnelWidth - segmentWidth)/2)
-                    .attr("y", height - segmentHeight)
-                    .attr("width", segmentWidth)
-                    .attr("height", segmentHeight)
-                    .attr("fill", recruitmentData.funnel.colors[i])
-                    .on("mouseover", function(event) {
-                        tooltip.transition()
-                            .duration(200)
-                            .style("opacity", .9);
-                        tooltip.html(`${label}: ${value} applications`)
-                            .style("left", (event.pageX + 10) + "px")
-                            .style("top", (event.pageY - 28) + "px");
-                    })
-                    .on("mouseout", function() {
-                        tooltip.transition()
-                            .duration(500)
-                            .style("opacity", 0);
-                    });
-                    
-                svg.append("text")
-                    .attr("x", i * funnelWidth + (funnelWidth/2))
-                    .attr("y", height - segmentHeight - 10)
-                    .attr("text-anchor", "middle")
-                    .text(`${label}: ${value}`);
-                    
-                if (i > 0) {
-                    const prevValue = recruitmentData.funnel.values[i-1];
-                    const conversion = prevValue > 0 ? (value / prevValue * 100).toFixed(1) : 0;
-                    svg.append("text")
-                        .attr("x", i * funnelWidth + (funnelWidth/2))
-                        .attr("y", height - segmentHeight - 30)
-                        .attr("text-anchor", "middle")
-                        .text(`${conversion}%`);
-                }
-            });
-            
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", -10)
-                .attr("text-anchor", "middle")
-                .style("font-size", "16px")
-                .text("Application Funnel");
-        }
-        
-        function drawStatusChart() {
-            const margin = {top: 40, right: 30, bottom: 60, left: 60};
-            const width = 800 - margin.left - margin.right;
-            const height = 400 - margin.top - margin.bottom;
-            
-            d3.select("#status-chart").html("");
-            
-            const svg = d3.select("#status-chart")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-                
-            const data = recruitmentData.statuses;
-            const total = d3.sum(data, d => d.value) || 1;
-            
-            const x = d3.scaleBand()
-                .range([0, width])
-                .domain(data.map(d => d.name))
-                .padding(0.2);
-                
-            svg.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x))
-                .selectAll("text")
-                .attr("transform", "rotate(-45)")
-                .style("text-anchor", "end");
-                
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.value) || 1])
-                .range([height, 0]);
-                
-            svg.append("g")
-                .call(d3.axisLeft(y));
+	            const maxValue = d3.max(recruitmentData.funnel.values);
+	            const funnelWidth = width / recruitmentData.funnel.labels.length;
+	            
+	            recruitmentData.funnel.labels.forEach((label, i) => {
+	                const value = recruitmentData.funnel.values[i];
+	                const segmentHeight = height * (value / (maxValue || 1));
+	                const segmentWidth = funnelWidth * 0.8;
+	                
+	                svg.append("rect")
+	                    .attr("x", i * funnelWidth + (funnelWidth - segmentWidth)/2)
+	                    .attr("y", height - segmentHeight)
+	                    .attr("width", segmentWidth)
+	                    .attr("height", segmentHeight)
+	                    .attr("fill", recruitmentData.funnel.colors[i])
+	                    .on("mouseover", function(event) {
+	                        tooltip.transition()
+	                            .duration(200)
+	                            .style("opacity", .9);
+	                        tooltip.html(`${label}: ${value} applications`)
+	                            .style("left", (event.pageX + 10) + "px")
+	                            .style("top", (event.pageY - 28) + "px");
+	                    })
+	                    .on("mouseout", function() {
+	                        tooltip.transition()
+	                            .duration(500)
+	                            .style("opacity", 0);
+	                    });
+	                    
+	                svg.append("text")
+	                    .attr("x", i * funnelWidth + (funnelWidth/2))
+	                    .attr("y", height - segmentHeight - 10)
+	                    .attr("text-anchor", "middle")
+	                    .text(`${label}: ${value}`);
+	                    
+	                if (i > 0) {
+	                    const prevValue = recruitmentData.funnel.values[i-1];
+	                    const conversion = prevValue > 0 ? (value / prevValue * 100).toFixed(1) : 0;
+	                    svg.append("text")
+	                        .attr("x", i * funnelWidth + (funnelWidth/2))
+	                        .attr("y", height - segmentHeight - 30)
+	                        .attr("text-anchor", "middle")
+	                        .text(`${conversion}%`);
+	                }
+	            });
+	            
+	            svg.append("text")
+	                .attr("x", width / 2)
+	                .attr("y", -10)
+	                .attr("text-anchor", "middle")
+	                .style("font-size", "16px")
+	                .text("Application Funnel");
+	        }
+	        
+	        function drawStatusChart() {
+	            const margin = {top: 40, right: 30, bottom: 60, left: 60};
+	            const width = 800 - margin.left - margin.right;
+	            const height = 400 - margin.top - margin.bottom;
+	            
+	            d3.select("#status-chart").html("");
+	            
+	            const svg = d3.select("#status-chart")
+	                .append("svg")
+	                .attr("width", width + margin.left + margin.right)
+	                .attr("height", height + margin.top + margin.bottom)
+	                .append("g")
+	                .attr("transform", `translate(${margin.left},${margin.top})`);
+	                
+	            const data = recruitmentData.statuses;
+	            const total = d3.sum(data, d => d.value) || 1;
+	            
+	            const x = d3.scaleBand()
+	                .range([0, width])
+	                .domain(data.map(d => d.name))
+	                .padding(0.2);
+	                
+	            svg.append("g")
+	                .attr("transform", `translate(0,${height})`)
+	                .call(d3.axisBottom(x))
+	                .selectAll("text")
+	                .attr("transform", "rotate(-45)")
+	                .style("text-anchor", "end");
+	                
+	            const y = d3.scaleLinear()
+	                .domain([0, d3.max(data, d => d.value) || 1])
+	                .range([height, 0]);
+	                
+	            svg.append("g")
+	                .call(d3.axisLeft(y));
 
-            svg.selectAll("bar")
-                .data(data)
-                .enter()
-                .append("rect")
-                .attr("x", d => x(d.name))
-                .attr("y", d => y(d.value))
-                .attr("width", x.bandwidth())
-                .attr("height", d => height - y(d.value))
-                .attr("fill", "#5cb85c")
-                .on("mouseover", function(event, d) {
-                    const percentage = ((d.value / total) * 100).toFixed(1);
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-                    tooltip.html(`${d.name}: ${d.value} (${percentage}%)`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                });
-                
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", -10)
-                .attr("text-anchor", "middle")
-                .style("font-size", "16px")
-                .text("Application Status Distribution");
-        }
-        
-        document.addEventListener("DOMContentLoaded", fetchData);
-    </script>
-    
-    <div id="analytics-data" th:utext="${analyticsData}" style="display:none;"></div>
-</body>
-</html>
+	            svg.selectAll("bar")
+	                .data(data)
+	                .enter()
+	                .append("rect")
+	                .attr("x", d => x(d.name))
+	                .attr("y", d => y(d.value))
+	                .attr("width", x.bandwidth())
+	                .attr("height", d => height - y(d.value))
+	                .attr("fill", "#5cb85c")
+	                .on("mouseover", function(event, d) {
+	                    const percentage = ((d.value / total) * 100).toFixed(1);
+	                    tooltip.transition()
+	                        .duration(200)
+	                        .style("opacity", .9);
+	                    tooltip.html(`${d.name}: ${d.value} (${percentage}%)`)
+	                        .style("left", (event.pageX + 10) + "px")
+	                        .style("top", (event.pageY - 28) + "px");
+	                })
+	                .on("mouseout", function() {
+	                    tooltip.transition()
+	                        .duration(500)
+	                        .style("opacity", 0);
+	                });
+	                
+	            svg.append("text")
+	                .attr("x", width / 2)
+	                .attr("y", -10)
+	                .attr("text-anchor", "middle")
+	                .style("font-size", "16px")
+	                .text("Application Status Distribution");
+	        }
+	        
+	        document.addEventListener("DOMContentLoaded", fetchData);
+	    </script>
+	    
+	    <div id="analytics-data" th:utext="${analyticsData}" style="display:none;"></div>
+	</body>
+	</html>

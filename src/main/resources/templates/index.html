@@ -4,67 +4,74 @@
     <title>Welcome to HR Management App</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: #f4f4f4;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
         }
 
         .container {
             background-color: #fff;
             padding: 30px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             text-align: center;
         }
 
         h1 {
-            color: #333;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
         }
 
         .btn {
             display: inline-block;
-            padding: 10px 20px;
+            padding: 12px 30px;
             margin: 20px 10px 0;
-            background-color: #5cb85c;
+            background-color: #2c3e50;
             color: #fff;
             text-decoration: none;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
         .btn:hover {
-            background-color: #4cae4c;
+            background-color: #1a252f;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
         }
 
         .signup-link {
             display: block;
             margin-top: 20px;
-            color: #5cb85c;
+            color: #2c3e50;
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .signup-link:hover {
+            color: #5cb85c;
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Welcome to HR Management App</h1>
         <p>Please select your role:</p>
         <a th:href="@{/login}" class="btn">HR</a>
         <a th:href="@{/login}" class="btn">User</a>
-		<a th:href="@{/login}" class="btn">New Joiner</a>
-		<a th:href="@{/login}" class="btn">Employee</a>
-
+        <a th:href="@{/login}" class="btn">New Joiner</a>
+        <a th:href="@{/login}" class="btn">Employee</a>
         <a th:href="@{/signup}" class="signup-link">Don't have an account? Sign up</a>
     </div>
-
 </body>
 </html>

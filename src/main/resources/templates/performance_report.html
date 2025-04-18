@@ -4,22 +4,29 @@
     <title>Performance Report</title>
     <style>
         body {
-            font-family: sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
+            color: #333;
         }
         .navbar {
-            background-color: #5cb85c;
-            padding: 10px;
+            background-color: #2c3e50;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .navbar a {
             color: white;
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .navbar a:hover {
+            color: #5cb85c;
         }
         .dropdown {
             position: relative;
@@ -28,54 +35,69 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
             z-index: 1;
             right: 0;
+            border-radius: 8px;
+            overflow: hidden;
         }
         .dropdown-content a {
-            color: black;
+            color: #2c3e50;
             padding: 12px 16px;
             text-decoration: none;
             display: block;
+            transition: all 0.3s ease;
         }
         .dropdown-content a:hover {
-            background-color: #ddd;
+            background-color: #f1f1f1;
+            color: #5cb85c;
         }
         .dropdown:hover .dropdown-content {
             display: block;
         }
         .container {
             max-width: 1200px;
-            margin: 30px auto;
-            padding: 20px;
+            margin: 40px auto;
+            padding: 30px;
             background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 2px solid #5cb85c;
+            padding-bottom: 10px;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
         }
         .report-content {
             white-space: pre-wrap;
             line-height: 1.6;
             margin: 20px 0;
             padding: 15px;
-            background-color: #f9f9f9;
+            background-color: #f8f9fa;
             border-radius: 5px;
-            border-left: 4px solid #5cb85c;
+            border-left: 4px solid #2c3e50;
         }
         .download-btn {
-            background-color: #5cb85c;
+            background-color: #2c3e50;
             color: white;
             padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
+            transition: background-color 0.3s ease;
             margin-top: 20px;
         }
         .download-btn:hover {
-            background-color: #4cae4c;
+            background-color: #1a252f;
         }
         .joiner-info {
             margin-bottom: 20px;
@@ -99,20 +121,15 @@
 	            </div>
         </div>
     </div>
-
     <div class="container">
         <h2>Performance Report</h2>
-        
         <div class="joiner-info">
             <p><strong>Name:</strong> <span th:text="${joiner.name}"></span></p>
             <p><strong>Team:</strong> <span th:text="${joiner.team}"></span></p>
             <p><strong>Position:</strong> <span th:text="${joiner.role}"></span></p>
         </div>
-        
         <div class="report-content" th:text="${report}"></div>
-        
-        <a th:href="@{/downloadPerformanceReport(reportText=${report}, joinerName=${joiner.name})}" 
-           class="download-btn">
+        <a th:href="@{/downloadPerformanceReport(reportText=${report}, joinerName=${joiner.name})}" class="download-btn">
             Download PDF Report
         </a>
     </div>

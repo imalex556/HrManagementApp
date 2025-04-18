@@ -1,156 +1,192 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>View Job Postings</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
+    <title>View Job Postings</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
 
-    .navbar {
-      background-color: #5cb85c;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .navbar {
+            background-color: #2c3e50;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
 
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      padding: 10px;
-      transition: background-color 0.3s ease;
-    }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
 
-    .navbar a:hover {
-      background-color: #4cae4c;
-    }
+        .navbar a:hover {
+            color: #5cb85c;
+        }
 
-    .container {
-      padding: 20px;
-    }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            z-index: 1;
+            right: 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
 
-    .job-listing {
-      background-color: #fff;
-      margin-bottom: 20px;
-      padding: 20px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
+        .dropdown-content a {
+            color: #2c3e50;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+        }
 
-    .job-title {
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #5cb85c;
-    }
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #5cb85c;
+        }
 
-    .job-details {
-      margin-top: 10px;
-    }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
 
-    .job-details p {
-      margin: 5px 0;
-      color: #555;
-    }
+        .container {
+            padding: 20px;
+        }
 
-    .separator {
-      border-top: 1px solid #ddd;
-      margin: 10px 0;
-    }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
 
-    .apply-button {
-      background-color: #5cb85c;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
+        .job-listing {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
 
-    .apply-button:hover {
-      background-color: #4cae4c;
-    }
+        .job-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #5cb85c;
+        }
 
-    /* Dropdown Menu Styles */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
+        .job-details {
+            margin-top: 10px;
+        }
 
-    .dropbtn {
-      background-color: #5cb85c;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      cursor: pointer;
-    }
+        .job-details p {
+            margin: 5px 0;
+            color: #555;
+        }
 
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: #f9f9f9;
-      min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-      z-index: 1;
-	  right: 0;
-    }
+        .separator {
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
+        }
 
-    .dropdown-content a {
-      color: black;
-      padding: 12px 16px;
-      text-decoration: none;
-      display: block;
-      white-space: nowrap;
-    }
+        .apply-button {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
 
-    .dropdown:hover .dropdown-content {
-      display: block;
-    }
-  </style>
+        .apply-button:hover {
+            background-color: #1a252f;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropbtn {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            right: 0;
+        }
+
+       dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
 </head>
 <body>
-  <div class="navbar">
-    <a th:href="@{/welcome}">Home</a>
-    <div class="dropdown">
-      <a class="dropbtn">Menu</a>
-      <div class="dropdown-content">
-        <a th:href="@{/profile}">Profile</a>
-        <a th:href="@{/notifications}" class="notification-icon">
-          Notifications
-          <span th:if="${notifications != null and #lists.size(notifications) > 0}" class="badge" th:text="${#lists.size(notifications)}"></span>
-        </a>
-        <a th:href="@{/}">Logout</a>
-      </div>
-    </div>
-  </div>
-  <div class="container">
-    <h2>Job Postings</h2>
-    <div th:if="${jobPostings}">
-      <div th:each="job : ${jobPostings}" class="job-listing">
-        <div class="job-title" th:text="${job.get('title')}"></div>
-        <div class="job-details">
-          <p><strong>Company:</strong> <span th:text="${job.get('company')}"></span></p>
-          <p><strong>Job Title:</strong> <span th:text="${job.get('title')}"></span></p>
-          <p><strong>Location:</strong> <span th:text="${job.get('location')}"></span></p>
-          <p><strong>Description:</strong> <span th:text="${job.get('description')}"></span></p>
-          <p><strong>Posted By:</strong> <span th:text="${job.get('postedBy')}"></span></p>
-          <form th:action="@{/applyJob}" method="get">
-            <input type="hidden" name="jobId" th:value="${job.id}">
-            <button type="submit" class="apply-button">Apply</button>
-          </form>
+	<div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/notifications}">Notifications</a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
         </div>
-      </div>
     </div>
-  </div>
+    <div class="container">
+        <h2>Job Postings</h2>
+        <div th:if="${jobPostings}">
+            <div th:each="job : ${jobPostings}" class="job-listing">
+                <div class="job-title" th:text="${job.get('title')}"></div>
+                <div class="job-details">
+                    <p><strong>Company:</strong> <span th:text="${job.get('company')}"></span></p>
+                    <p><strong>Job Title:</strong> <span th:text="${job.get('title')}"></span></p>
+                    <p><strong>Location:</strong> <span th:text="${job.get('location')}"></span></p>
+                    <p><strong>Description:</strong> <span th:text="${job.get('description')}"></span></p>
+                    <p><strong>Posted By:</strong> <span th:text="${job.get('postedBy')}"></span></p>
+                    <form th:action="@{/applyJob}" method="get">
+                        <input type="hidden" name="jobId" th:value="${job.id}">
+                        <button type="submit" class="apply-button">Apply</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

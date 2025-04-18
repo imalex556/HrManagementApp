@@ -4,34 +4,83 @@
     <title>Select New Joiner</title>
     <style>
         body {
-            font-family: sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
+            color: #333;
         }
         .navbar {
-            background-color: #5cb85c;
-            padding: 10px;
+            background-color: #2c3e50;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .navbar a {
-            color: #fff;
+            color: white;
             text-decoration: none;
-            padding: 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .navbar a:hover {
+            color: #5cb85c;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            z-index: 1;
+            right: 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .dropdown-content a {
+            color: #2c3e50;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+        }
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #5cb85c;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
         }
         .container {
             max-width: 1200px;
-            margin: 30px auto;
-            padding: 20px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 2px solid #5cb85c;
+            padding-bottom: 10px;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
         }
         .joiner-listing {
             background: white;
             margin-bottom: 20px;
             padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -41,67 +90,26 @@
         }
         .joiner-name {
             font-weight: bold;
-            color: #5cb85c;
+            color: #2c3e50;
         }
         .review-button {
-            background: #5cb85c;
+            background: #2c3e50;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .review-button:hover {
+            background-color: #1a252f;
         }
         .no-joiners {
             text-align: center;
             padding: 20px;
             color: #666;
         }
-		
-		.dropdown {
-		            position: relative;
-		            display: inline-block;
-		        }
-		        
-		        .dropdown-content {
-		            display: none;
-		            position: absolute;
-		            background-color: #f9f9f9;
-		            min-width: 160px;
-		            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-		            z-index: 1;
-		            right: 0;
-		        }
-		        
-		        .dropdown-content a {
-		            color: black;
-		            padding: 12px 16px;
-		            text-decoration: none;
-		            display: block;
-		        }
-		        
-		        .dropdown-content a:hover {
-		            background-color: #ddd;
-		        }
-		        
-		        .dropdown:hover .dropdown-content {
-		            display: block;
-		        }
-		        
-		        .notification-icon {
-		            position: relative;
-		        }
-		        
-		        .badge {
-		            position: absolute;
-		            top: -5px;
-		            right: -5px;
-		            background-color: red;
-		            color: white;
-		            border-radius: 50%;
-		            padding: 2px 6px;
-		            font-size: 12px;
-		        }
-		    </style>
+    </style>
 </head>
 <body>
 	<div class="navbar">
@@ -110,16 +118,11 @@
 	            <a class="dropbtn">Menu</a>
 	            <div class="dropdown-content">
 	                <a th:href="@{/profile}">Profile</a>
-	                <a th:href="@{/notifications}" class="notification-icon">
-	                    Notifications
-	                    <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-	                          class="badge" th:text="${#lists.size(notifications)}"></span>
-	                </a>
+	                <a th:href="@{/notifications}">Notifications</a>
 	                <a th:href="@{/}">Logout</a>
 	            </div>
         </div>
     </div>
-
     <div class="container">
         <h2>Select New Joiner for Review</h2>
         <div th:if="${newJoiners}">

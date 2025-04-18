@@ -1,273 +1,276 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-  <title>Notifications</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
+	<title>Notifications</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background-color: #f8f9fa;
+			margin: 0;
+			padding: 0;
+			color: #333;
+		}
 
-    .navbar {
-      background-color: #5cb85c;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+		.navbar {
+			background-color: #2c3e50;
+			padding: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		}
 
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      padding: 10px;
-      transition: background-color 0.3s ease;
-    }
+		.navbar a {
+			color: white;
+			text-decoration: none;
+			padding: 10px 20px;
+			font-weight: 500;
+			transition: all 0.3s ease;
+		}
 
-    .navbar a:hover {
-      background-color: #4cae4c;
-    }
+		.navbar a:hover {
+			color: #5cb85c;
+		}
 
-    .container {
-      background-color: #fff;
-      padding: 40px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      width: 600px;
-      margin: 50px auto;
-    }
+		.dropdown {
+			position: relative;
+			display: inline-block;
+		}
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
+		.dropdown-content {
+			display: none;
+			position: absolute;
+			background-color: #ffffff;
+			min-width: 180px;
+			box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+			z-index: 1;
+			right: 0;
+			border-radius: 8px;
+			overflow: hidden;
+		}
 
-    .notification-list {
-      list-style-type: none;
-      padding: 0;
-    }
+		.dropdown-content a {
+			color: #2c3e50;
+			padding: 12px 16px;
+			text-decoration: none;
+			display: block;
+			transition: all 0.3s ease;
+		}
 
-    .notification-item {
-      background-color: #f8f8f8;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+		.dropdown-content a:hover {
+			background-color: #f1f1f1;
+			color: #5cb85c;
+		}
 
-    .notification-item.unread {
-      background-color: #f8d7da;
-    }
+		.dropdown:hover .dropdown-content {
+			display: block;
+		}
 
-    .notification-content {
-      flex-grow: 1;
-      margin-right: 15px;
-    }
+		.container {
+			background-color: #fff;
+			padding: 40px;
+			border-radius: 12px;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+			width: 600px;
+			margin: 50px auto;
+		}
 
-    .notification-content p {
-      margin: 0;
-      color: #555;
-    }
+		h2 {
+			text-align: center;
+			margin-bottom: 20px;
+			color: #2c3e50;
+			font-weight: 600;
+		}
 
-    .notification-details {
-      margin-top: 8px;
-      padding: 8px;
-      background-color: #e9ecef;
-      border-radius: 4px;
-      font-size: 0.9em;
-    }
+		.notification-list {
+			list-style-type: none;
+			padding: 0;
+		}
 
-    .notification-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-      min-width: 150px;
-    }
+		.notification-item {
+			background-color: #f8f8f8;
+			padding: 15px;
+			border-radius: 12px;
+			margin-bottom: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+		}
 
-    .notification-actions form {
-      margin: 0;
-      width: 100%;
-    }
+		.notification-item.unread {
+			background-color: #f8d7da;
+		}
 
-    .notification-actions button {
-      color: #fff;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      width: 100%;
-      font-size: 0.9em;
-    }
+		.notification-content {
+			flex-grow: 1;
+			margin-right: 15px;
+		}
 
-    .notification-actions .accept-btn {
-      background-color: #5cb85c;
-    }
+		.notification-content p {
+			margin: 0;
+			color: #555;
+		}
 
-    .notification-actions .accept-btn:hover {
-      background-color: #4cae4c;
-    }
+		.notification-details {
+			margin-top: 8px;
+			padding: 8px;
+			background-color: #e9ecef;
+			border-radius: 12px;
+			font-size: 0.9em;
+		}
 
-    .notification-actions .reschedule-btn {
-      background-color: #f0ad4e;
-    }
+		.notification-actions {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			align-items: center;
+			min-width: 150px;
+		}
 
-    .notification-actions .reschedule-btn:hover {
-      background-color: #ec971f;
-    }
+		.notification-actions form {
+			margin: 0;
+			width: 100%;
+		}
 
-    .notification-actions .schedule-btn {
-      background-color: #337ab7;
-    }
+		.notification-actions button {
+			color: #fff;
+			padding: 12px 30px;
+			border: none;
+			border-radius: 25px;
+			cursor: pointer;
+			transition: background-color 0.3s ease, box-shadow 0.3s ease;
+			width: 100%;
+			font-size: 0.9em;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+		}
 
-    .notification-actions .schedule-btn:hover {
-      background-color: #286090;
-    }
+		.notification-actions .accept-btn {
+			background-color: #5cb85c;
+		}
 
-    .notification-actions .delete-button {
-      background-color: #d9534f;
-    }
+		.notification-actions .accept-btn:hover {
+			background-color: #4cae4c;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+		}
 
-    .notification-actions .delete-button:hover {
-      background-color: #c9302c;
-    }
+		.notification-actions .reschedule-btn {
+			background-color: #f0ad4e;
+		}
 
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
+		.notification-actions .reschedule-btn:hover {
+			background-color: #ec971f;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+		}
 
-    .dropbtn {
-      background-color: #5cb85c;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      cursor: pointer;
-    }
+		.notification-actions .schedule-btn {
+			background-color: #337ab7;
+		}
 
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: #f9f9f9;
-      min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-      z-index: 1;
-	  right: 0;
-    }
+		.notification-actions .schedule-btn:hover {
+			background-color: #286090;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+		}
 
-    .dropdown-content a {
-      color: black;
-      padding: 12px 16px;
-      text-decoration: none;
-      display: block;
-    }
+		.notification-actions .delete-button {
+			background-color: #d9534f;
+		}
 
-    .dropdown:hover .dropdown-content {
-      display: block;
-    }
+		.notification-actions .delete-button:hover {
+			background-color: #c9302c;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+		}
 
-    .badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      padding: 3px 7px;
-      border-radius: 50%;
-      background-color: red;
-      color: white;
-      font-size: 0.8em;
-    }
-  </style>
+	</style>
 </head>
-<body>
-  <div class="navbar">
-    <a th:href="@{/welcome}">Home</a>
-    <div class="dropdown">
-      <a class="dropbtn">Menu</a>
-      <div class="dropdown-content">
-        <a th:href="@{/profile}">Profile</a>
-        <a th:href="@{/notifications}" class="notification-icon">
-          Notifications
-          <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                class="badge" th:text="${#lists.size(notifications)}"></span>
-        </a>
-        <a th:href="@{/}">Logout</a>
-      </div>
-    </div>
-  </div>
-  <div class="container">
-    <h2>Notifications</h2>
-    <ul class="notification-list">
-      <li th:each="notification : ${notifications}" 
-          th:classappend="${notification.get('read') == null or !notification.get('read')} ? 'unread'" 
-          class="notification-item">
-        <div class="notification-content">
-          <p th:text="${notification.get('message')}"></p>
-          <div class="notification-details" th:if="${notification.get('type') == 'interview_scheduled'}">
-            <p><strong>Type:</strong> <span th:text="${notification.get('interviewType') ?: 'N/A'}"></span></p>
-            <p th:if="${notification.get('interviewType') == 'In-Person'}">
-              <strong>Location:</strong> <span th:text="${notification.get('interviewLocation') ?: 'Location not specified'}"></span>
-            </p>
-            <p><strong>Scheduled:</strong> <span th:text="${notification.get('interviewDateTime') ?: 'Date not specified'}"></span></p>
-          </div>
-          <div class="notification-details" th:if="${notification.get('type') == 'personality_test_passed'}">
-            <p><strong>Candidate:</strong> <span th:text="${notification.get('candidateName') ?: 'N/A'}"></span></p>
-            <p><strong>Position:</strong> <span th:text="${notification.get('jobTitle') ?: 'N/A'}"></span></p>
-          </div>
-        </div>
-        <div class="notification-actions">
-          <div th:if="${notification.get('type') == 'personality_test_passed' 
-                      and (notification.get('read') == null or !notification.get('read'))}">
-            <form th:action="@{/scheduleInterview}" method="get">
-              <input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
-              <input type="hidden" name="jobId" th:value="${notification.get('jobId')}">
-              <input type="hidden" name="candidateName" th:value="${notification.get('candidateName')}">
-              <input type="hidden" name="jobTitle" th:value="${notification.get('jobTitle')}">
-              <button type="submit" class="schedule-btn">Schedule Interview</button>
-            </form>
-          </div>
-		  <div th:if="${notification.get('type') == 'interview_scheduled' 
-		                and (notification.get('read') == null or !notification.get('read'))}">
-			<form th:action="@{/acceptInterview}" method="post">
-				<input type="hidden" name="notificationId" th:value="${notification.id}">
-				<input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
-				<button type="submit" class="accept-btn">Accept Interview</button>
-			</form>
-		    <form th:action="@{/declineInterview}" method="post">
-		      <input type="hidden" name="notificationId" th:value="${notification.id}">
-		      <input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
-		      <button type="submit" class="delete-button">Decline Interview</button>
-		    </form>
-		  </div>
 
-          <form th:action="@{/markAsRead}" method="post">
-            <input type="hidden" name="notificationId" th:value="${notification.id}">
-            <button type="submit">Mark Read</button>
-          </form>
-          <form th:action="@{/deleteNotification}" method="post">
-            <input type="hidden" name="notificationId" th:value="${notification.id}">
-            <button type="submit" class="delete-button">Delete</button>
-          </form>
-		  <div th:if="${notification.get('type') == 'offer_received' 
+<body>
+	<div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
+		</div>
+	</div>
+	<div class="container">
+		<h2>Notifications</h2>
+		<ul class="notification-list">
+			<li th:each="notification : ${notifications}"
+				th:classappend="${notification.get('read') == null or !notification.get('read')} ? 'unread'"
+				class="notification-item">
+				<div class="notification-content">
+					<p th:text="${notification.get('message')}"></p>
+					<div class="notification-details" th:if="${notification.get('type') == 'interview_scheduled'}">
+						<p><strong>Type:</strong> <span th:text="${notification.get('interviewType') ?: 'N/A'}"></span>
+						</p>
+						<p th:if="${notification.get('interviewType') == 'In-Person'}">
+							<strong>Location:</strong> <span
+								th:text="${notification.get('interviewLocation') ?: 'Location not specified'}"></span>
+						</p>
+						<p><strong>Scheduled:</strong> <span
+								th:text="${notification.get('interviewDateTime') ?: 'Date not specified'}"></span></p>
+					</div>
+					<div class="notification-details" th:if="${notification.get('type') == 'personality_test_passed'}">
+						<p><strong>Candidate:</strong> <span
+								th:text="${notification.get('candidateName') ?: 'N/A'}"></span></p>
+						<p><strong>Position:</strong> <span th:text="${notification.get('jobTitle') ?: 'N/A'}"></span>
+						</p>
+					</div>
+				</div>
+				<div class="notification-actions">
+					<div th:if="${notification.get('type') == 'personality_test_passed' 
+                                and (notification.get('read') == null or !notification.get('read'))}">
+						<form th:action="@{/scheduleInterview}" method="get">
+							<input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
+							<input type="hidden" name="jobId" th:value="${notification.get('jobId')}">
+							<input type="hidden" name="candidateName" th:value="${notification.get('candidateName')}">
+							<input type="hidden" name="jobTitle" th:value="${notification.get('jobTitle')}">
+							<button type="submit" class="schedule-btn">Schedule Interview</button>
+						</form>
+					</div>
+					<div th:if="${notification.get('type') == 'interview_scheduled' 
+                                and (notification.get('read') == null or !notification.get('read'))}">
+						<form th:action="@{/acceptInterview}" method="post">
+							<input type="hidden" name="notificationId" th:value="${notification.id}">
+							<input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
+							<button type="submit" class="accept-btn">Accept Interview</button>
+						</form>
+						<form th:action="@{/declineInterview}" method="post">
+							<input type="hidden" name="notificationId" th:value="${notification.id}">
+							<input type="hidden" name="applicationId" th:value="${notification.get('applicationId')}">
+							<button type="submit" class="delete-button">Decline Interview</button>
+						</form>
+					</div>
+
+					<form th:action="@{/markAsRead}" method="post">
+						<input type="hidden" name="notificationId" th:value="${notification.id}">
+						<button type="submit">Mark Read</button>
+					</form>
+					<form th:action="@{/deleteNotification}" method="post">
+						<input type="hidden" name="notificationId" th:value="${notification.id}">
+						<button type="submit" class="delete-button">Delete</button>
+					</form>
+					<div th:if="${notification.get('type') == 'offer_received' 
 		                and (notification.get('read') == null or !notification.get('read'))}">
-		      <form th:action="@{/acceptOffer}" method="post">
-		          <input type="hidden" name="offerId" th:value="${notification.get('offerId')}">
-		          <input type="hidden" name="notificationId" th:value="${notification.id}">
-		          <button type="submit" class="accept-btn">Accept Offer</button>
-		      </form>
-		      <form th:action="@{/declineOffer}" method="post">
-		          <input type="hidden" name="offerId" th:value="${notification.get('offerId')}">
-		          <input type="hidden" name="notificationId" th:value="${notification.id}">
-		          <button type="submit" class="delete-button">Decline Offer</button>
-		      </form>
-		  </div>
-        </div>
-      </li>
-    </ul>
-  </div>
+						<form th:action="@{/acceptOffer}" method="post">
+							<input type="hidden" name="offerId" th:value="${notification.get('offerId')}">
+							<input type="hidden" name="notificationId" th:value="${notification.id}">
+							<button type="submit" class="accept-btn">Accept Offer</button>
+						</form>
+						<form th:action="@{/declineOffer}" method="post">
+							<input type="hidden" name="offerId" th:value="${notification.get('offerId')}">
+							<input type="hidden" name="notificationId" th:value="${notification.id}">
+							<button type="submit" class="delete-button">Decline Offer</button>
+						</form>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
 </body>
+
 </html>

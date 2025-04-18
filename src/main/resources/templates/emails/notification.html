@@ -7,7 +7,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
         }
@@ -15,12 +15,12 @@
             max-width: 600px;
             margin: 20px auto;
             background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             overflow: hidden;
         }
         .email-header {
-            background-color: #5cb85c;
+            background-color: #2c3e50;
             color: white;
             padding: 20px;
             text-align: center;
@@ -58,7 +58,7 @@
         }
         .company-name {
             font-weight: bold;
-            color: #5cb85c;
+            color: #2c3e50;
         }
     </style>
 </head>
@@ -67,20 +67,14 @@
         <div class="email-header">
             <h1 th:text="${subject}">Interview Scheduled</h1>
         </div>
-        
         <div class="email-body">
             <p class="greeting">Dear <span th:text="${candidateName}">Candidate</span>,</p>
-            
-            <div class="content" th:utext="${content}">
-
-            </div>
-            
+            <div class="content" th:utext="${content}"></div>
             <div class="signature">
                 <p>Best regards,</p>
                 <p class="company-name">HR Team</p>
             </div>
         </div>
-        
         <div class="email-footer">
             <p>This is an automated message. Please do not reply directly to this email.</p>
         </div>

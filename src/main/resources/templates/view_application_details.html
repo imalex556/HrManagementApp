@@ -1,327 +1,372 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-  <title>Application Details</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
-    .navbar {
-      background-color: #5cb85c;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-      padding: 10px;
-      transition: background-color 0.3s ease;
-    }
-    .navbar a:hover {
-      background-color: #4cae4c;
-    }
-    .container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    .details {
-      background-color: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-      text-align: center;
-    }
-    .details p {
-      margin: 15px 0;
-      color: #555;
-      font-size: 16px;
-    }
-    .chart-container {
-      margin: 30px auto;
-      width: 400px;
-      height: 400px;
-      position: relative;
-    }
-    .tooltip {
-      position: absolute;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      border-radius: 4px;
-      pointer-events: none;
-      font-size: 14px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .chart-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #5cb85c;
-    }
-    .chart-legend {
-      display: flex;
-      justify-content: center;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      margin: 0 15px 10px;
-      cursor: pointer;
-    }
-    .legend-color {
-      width: 20px;
-      height: 20px;
-      margin-right: 8px;
-      border-radius: 4px;
-    }
-    .notification-icon {
-      position: relative;
-      display: inline-block;
-    }
-    .notification-icon .badge {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      padding: 5px 10px;
-      border-radius: 50%;
-      background-color: red;
-      color: white;
-    }
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    .dropbtn {
-      background-color: #5cb85c;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      cursor: pointer;
-    }
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: #f9f9f9;
-      min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-      z-index: 1;
-      right: 0;
-    }
-    .dropdown-content a {
-      color: black;
-      padding: 12px 16px;
-      text-decoration: none;
-      display: block;
-    }
-    .dropdown:hover .dropdown-content {
-      display: block;
-    }
-    .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 300px;
-    }
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #5cb85c;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+	<title>Application Details</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background-color: #f8f9fa;
+			margin: 0;
+			padding: 0;
+			color: #333;
+		}
+
+		.navbar {
+			background-color: #2c3e50;
+			padding: 15px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		}
+
+		.navbar a {
+			color: white;
+			text-decoration: none;
+			padding: 10px 20px;
+			font-weight: 500;
+			transition: all 0.3s ease;
+		}
+
+		.navbar a:hover {
+			color: #5cb85c;
+		}
+
+		.dropdown {
+			position: relative;
+			display: inline-block;
+		}
+
+		.dropdown-content {
+			display: none;
+			position: absolute;
+			background-color: #ffffff;
+			min-width: 180px;
+			box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+			z-index: 1;
+			right: 0;
+			border-radius: 8px;
+			overflow: hidden;
+		}
+
+		.dropdown-content a {
+			color: #2c3e50;
+			padding: 12px 16px;
+			text-decoration: none;
+			display: block;
+			transition: all 0.3s ease;
+		}
+
+		.dropdown-content a:hover {
+			background-color: #f1f1f1;
+			color: #5cb85c;
+		}
+
+		.dropdown:hover .dropdown-content {
+			display: block;
+		}
+
+		.container {
+			padding: 20px;
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+
+		h2 {
+			text-align: center;
+			margin-bottom: 20px;
+			color: #2c3e50;
+			font-weight: 600;
+		}
+
+		.details {
+			background-color: #fff;
+			padding: 30px;
+			border-radius: 12px;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+			text-align: center;
+		}
+
+		.details p {
+			margin: 15px 0;
+			color: #555;
+			font-size: 16px;
+		}
+
+		.chart-container {
+			margin: 30px auto;
+			width: 400px;
+			height: 400px;
+			position: relative;
+		}
+
+		.tooltip {
+			position: absolute;
+			padding: 10px;
+			background: rgba(0, 0, 0, 0.8);
+			color: white;
+			border-radius: 4px;
+			pointer-events: none;
+			font-size: 14px;
+			opacity: 0;
+			transition: opacity 0.3s;
+		}
+
+		.chart-title {
+			font-size: 18px;
+			font-weight: bold;
+			margin-bottom: 10px;
+			color: #5cb85c;
+		}
+
+		.chart-legend {
+			display: flex;
+			justify-content: center;
+			margin-top: 20px;
+			flex-wrap: wrap;
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			margin: 0 15px 10px;
+			cursor: pointer;
+		}
+
+		.legend-color {
+			width: 20px;
+			height: 20px;
+			margin-right: 8px;
+			border-radius: 4px;
+		}
+
+		.dropdown {
+			position: relative;
+			display: inline-block;
+		}
+
+		.dropbtn {
+			background-color: #2c3e50;
+			color: white;
+			padding: 10px 16px;
+			border: none;
+			cursor: pointer;
+		}
+
+		.dropdown-content {
+			display: none;
+			position: absolute;
+			background-color: #f9f9f9;
+			min-width: 160px;
+			box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+			z-index: 1;
+			right: 0;
+		}
+
+		.dropdown-content a {
+			color: black;
+			padding: 12px 16px;
+			text-decoration: none;
+			display: block;
+		}
+
+		.dropdown:hover .dropdown-content {
+			display: block;
+		}
+
+		.loading {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 300px;
+		}
+
+		.spinner {
+			width: 50px;
+			height: 50px;
+			border: 5px solid #f3f3f3;
+			border-top: 5px solid #5cb85c;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+	</style>
 </head>
+
 <body>
-  <div class="navbar">
-    <a th:href="@{/welcome}">Home</a>
-    <div class="dropdown">
-      <a class="dropbtn">Menu</a>
-      <div class="dropdown-content">
-        <a th:href="@{/profile}">Profile</a>
-        <a th:href="@{/notifications}" class="notification-icon">
-          Notifications
-          <span th:if="${notifications != null and #lists.size(notifications) > 0}" 
-                class="badge" th:text="${#lists.size(notifications)}"></span>
-        </a>
-        <a th:href="@{/}">Logout</a>
-      </div>
-    </div>
-  </div>
-  <div class="container">
-    <h2>Application Details</h2>
-    <div class="details">
-      <p><strong>Name:</strong> <span th:text="${applicantName}"></span></p>
-      <p><strong>Email:</strong> <span th:text="${applicantEmail}"></span></p>
-      <p><strong>Match Percentage:</strong> <span th:text="${#numbers.formatDecimal(matchPercentage, 1, 2)}"></span>%</p>
-      
-      <div class="chart-container">
-        <div class="chart-title">CV Match Analysis</div>
-        <div id="pie-chart"></div>
-        <div id="tooltip" class="tooltip"></div>
-        <div id="legend" class="chart-legend"></div>
-      </div>
-    </div>
-  </div>
+	<div class="navbar">
+	        <a th:href="@{/welcome}">Home</a>
+	        <div class="dropdown">
+	            <a class="dropbtn">Menu</a>
+	            <div class="dropdown-content">
+	                <a th:href="@{/profile}">Profile</a>
+	                <a th:href="@{/notifications}">Notifications</a>
+	                <a th:href="@{/}">Logout</a>
+	            </div>
+		</div>
+	</div>
+	<div class="container">
+		<h2>Application Details</h2>
+		<div class="details">
+			<p><strong>Name:</strong> <span th:text="${applicantName}"></span></p>
+			<p><strong>Email:</strong> <span th:text="${applicantEmail}"></span></p>
+			<p><strong>Match Percentage:</strong> <span
+					th:text="${#numbers.formatDecimal(matchPercentage, 1, 2)}"></span>%</p>
+			<div class="chart-container">
+				<div class="chart-title">CV Match Analysis</div>
+				<div id="pie-chart"></div>
+				<div id="tooltip" class="tooltip"></div>
+				<div id="legend" class="chart-legend"></div>
+			</div>
+		</div>
+	</div>
+	<script src="https://d3js.org/d3.v7.min.js"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const pieChartDiv = d3.select("#pie-chart");
+			pieChartDiv.html('<div class="loading"><div class="spinner"></div></div>');
+			const matchPercentage = parseFloat([[${matchPercentage}]]);
+			const mismatchPercentage = 100 - matchPercentage;
+			const pieData = [
+				{
+					label: "Match",
+					value: matchPercentage,
+					color: "#5cb85c"
+				},
+				{
+					label: "Mismatch",
+					value: mismatchPercentage,
+					color: "#e15759"
+				}
+			];
+			setTimeout(() => {
+				renderPieChart(pieData);
+			}, 800);
+		});
 
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-		const pieChartDiv = d3.select("#pie-chart");
-		pieChartDiv.html('<div class="loading"><div class="spinner"></div></div>');
+		function renderPieChart(data) {
+			d3.select("#pie-chart").html("");
 
-		const matchPercentage = parseFloat([[${matchPercentage}]]);
-		const mismatchPercentage = 100 - matchPercentage;
+			const width = 350;
+			const height = 350;
+			const radius = Math.min(width, height) / 2;
 
-		const pieData = [
-		  { 
-		    label: "Match", 
-		    value: matchPercentage, 
-		    color: "#5cb85c" 
-		  },
-		  { 
-		    label: "Mismatch", 
-		    value: mismatchPercentage, 
-		    color: "#e15759" 
-		  }
-		];
+			const svg = d3.select("#pie-chart")
+				.append("svg")
+				.attr("width", width)
+				.attr("height", height)
+				.append("g")
+				.attr("transform", `translate(${width / 2},${height / 2})`);
 
-		setTimeout(() => {
-		  renderPieChart(pieData);
-		}, 800);
-    });
-    
-    function renderPieChart(data) {
-      d3.select("#pie-chart").html("");
-      
-      const width = 350;
-      const height = 350;
-      const radius = Math.min(width, height) / 2;
-      
-      const svg = d3.select("#pie-chart")
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .append("g")
-        .attr("transform", `translate(${width/2},${height/2})`);
-      
-      const tooltip = d3.select("#tooltip");
-      
-      const pie = d3.pie()
-        .value(d => d.value)
-        .sort(null);
-      
-      const arc = d3.arc()
-        .innerRadius(0)
-        .outerRadius(radius);
-      
-      const arcs = svg.selectAll("arc")
-        .data(pie(data))
-        .enter()
-        .append("g")
-        .attr("class", "arc");
-      
-      arcs.append("path")
-        .attr("fill", d => d.data.color)
-        .attr("d", arc)
-        .transition()
-        .duration(1000)
-        .attrTween("d", function(d) {
-          const interpolate = d3.interpolate({
-            startAngle: 0,
-            endAngle: 0
-          }, d);
-          return function(t) {
-            return arc(interpolate(t));
-          };
-        });
-      
-      arcs.append("text")
-        .attr("transform", d => `translate(${arc.centroid(d)})`)
-        .attr("text-anchor", "middle")
-        .text(d => `${d.data.value.toFixed(1)}%`)
-        .style("fill", "white")
-        .style("font-weight", "bold")
-        .style("font-size", "14px");
-      
-      arcs.on("mouseover", function(event, d) {
-          d3.select(this).select("path")
-            .transition()
-            .duration(200)
-            .attr("d", d3.arc()
-              .innerRadius(0)
-              .outerRadius(radius * 1.05)
-            );
-          
-          tooltip.transition()
-            .duration(200)
-            .style("opacity", 1);
-          tooltip.html(`${d.data.label}: ${d.data.value.toFixed(1)}%`)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", function() {
-          d3.select(this).select("path")
-            .transition()
-            .duration(200)
-            .attr("d", arc);
-          
-          tooltip.transition()
-            .duration(500)
-            .style("opacity", 0);
-        });
-      
-      const legend = d3.select("#legend");
-      
-      const legendItems = legend.selectAll(".legend-item")
-        .data(data)
-        .enter()
-        .append("div")
-        .attr("class", "legend-item")
-        .on("click", function(event, d) {
-          const clickedItem = d3.select(this);
-          const isActive = clickedItem.classed("active");
-          
-          d3.selectAll(".legend-item").classed("active", false);
-          
-          if (!isActive) {
-            clickedItem.classed("active", true);
-            svg.selectAll("path")
-              .style("opacity", 0.2);
-            svg.selectAll("path")
-              .filter(pathData => pathData.data.label === d.label)
-              .style("opacity", 1);
-          } else {
-            svg.selectAll("path").style("opacity", 1);
-          }
-        });
-      
-      legendItems.append("div")
-        .attr("class", "legend-color")
-        .style("background-color", d => d.color);
-      
-      legendItems.append("div")
-        .text(d => d.label);
-    }
-  </script>
+			const tooltip = d3.select("#tooltip");
+
+			const pie = d3.pie()
+				.value(d => d.value)
+				.sort(null);
+
+			const arc = d3.arc()
+				.innerRadius(0)
+				.outerRadius(radius);
+
+			const arcs = svg.selectAll("arc")
+				.data(pie(data))
+				.enter()
+				.append("g")
+				.attr("class", "arc");
+
+			arcs.append("path")
+				.attr("fill", d => d.data.color)
+				.attr("d", arc)
+				.transition()
+				.duration(1000)
+				.attrTween("d", function (d) {
+					const interpolate = d3.interpolate({
+						startAngle: 0,
+						endAngle: 0
+					}, d);
+					return function (t) {
+						return arc(interpolate(t));
+					};
+				});
+
+			arcs.append("text")
+				.attr("transform", d => `translate(${arc.centroid(d)})`)
+				.attr("text-anchor", "middle")
+				.text(d => `${d.data.value.toFixed(1)}%`)
+				.style("fill", "white")
+				.style("font-weight", "bold")
+				.style("font-size", "14px");
+
+			arcs.on("mouseover", function (event, d) {
+				d3.select(this).select("path")
+					.transition()
+					.duration(200)
+					.attr("d", d3.arc()
+						.innerRadius(0)
+						.outerRadius(radius * 1.05)
+					);
+
+				tooltip.transition()
+					.duration(200)
+					.style("opacity", 1);
+				tooltip.html(`${d.data.label}: ${d.data.value.toFixed(1)}%`)
+					.style("left", (event.pageX + 10) + "px")
+					.style("top", (event.pageY - 28) + "px");
+			})
+				.on("mouseout", function () {
+					d3.select(this).select("path")
+						.transition()
+						.duration(200)
+						.attr("d", arc);
+
+					tooltip.transition()
+						.duration(500)
+						.style("opacity", 0);
+				});
+
+			const legend = d3.select("#legend");
+
+			const legendItems = legend.selectAll(".legend-item")
+				.data(data)
+				.enter()
+				.append("div")
+				.attr("class", "legend-item")
+				.on("click", function (event, d) {
+					const clickedItem = d3.select(this);
+					const isActive = clickedItem.classed("active");
+
+					d3.selectAll(".legend-item").classed("active", false);
+
+					if (!isActive) {
+						clickedItem.classed("active", true);
+						svg.selectAll("path")
+							.style("opacity", 0.2);
+						svg.selectAll("path")
+							.filter(pathData => pathData.data.label === d.label)
+							.style("opacity", 1);
+					} else {
+						svg.selectAll("path").style("opacity", 1);
+					}
+				});
+
+			legendItems.append("div")
+				.attr("class", "legend-color")
+				.style("background-color", d => d.color);
+
+			legendItems.append("div")
+				.text(d => d.label);
+		}
+	</script>
 </body>
+
 </html>
