@@ -1810,34 +1810,68 @@ public class JobPostingController {
             @RequestParam String joinerId,
             Model model) throws ExecutionException, InterruptedException {
         
+        logger.info("Starting performance report generation for joinerId: " + joinerId);
+        
         try {
+            logger.info("Received request to generate report for joinerId: " + joinerId);
+            
+            logger.info("Fetching joiner document for ID: " + joinerId);
+            DocumentSnapshot joinerDoc = firestore.collection("users").document(joinerId).get().get();
+            
+            if (!joinerDoc.exists()) {
+                logger.warning("Joiner document not found for ID: " + joinerId);
+                model.addAttribute("error", "New joiner not found");
+                return "redirect:/viewJoinerReviews?joinerId=" + joinerId;
+            }
+
+            String joinerName = joinerDoc.getString("name");
+            String joinerEmail = joinerDoc.getString("email");
+            logger.info("Found joiner: " + joinerName + " (" + joinerEmail + ") with ID: " + joinerId);
+
+            logger.info("Querying reviews for joinerId: " + joinerId);
             List<QueryDocumentSnapshot> reviewDocs = firestore.collection("probationReviews")
                     .whereEqualTo("joinerId", joinerId)
                     .get().get().getDocuments();
 
+            logger.info("Found " + reviewDocs.size() + " reviews for joiner " + joinerName);
+            
             if (reviewDocs.isEmpty()) {
+                logger.warning("No reviews found for joiner: " + joinerName + " (ID: " + joinerId + ")");
                 model.addAttribute("error", "No reviews found for this employee");
                 return "redirect:/viewJoinerReviews?joinerId=" + joinerId;
             }
 
-            DocumentSnapshot joinerDoc = firestore.collection("users").document(joinerId).get().get();
+            for (QueryDocumentSnapshot doc : reviewDocs) {
+                logger.info("Review ID: " + doc.getId() + " for joiner: " + 
+                    doc.getString("joinerId") + " by reviewer: " + doc.getString("reviewer"));
+            }
+
             Map<String, Object> joiner = new HashMap<>();
-            joiner.put("name", joinerDoc.getString("name"));
-            joiner.put("email", joinerDoc.getString("email"));
+            joiner.put("name", joinerName);
+            joiner.put("email", joinerEmail);
             joiner.put("team", joinerDoc.getString("team"));
             joiner.put("role", joinerDoc.getString("role"));
 
+            logger.info("Building prompt for Gemini API");
             StringBuilder promptBuilder = new StringBuilder();
-            promptBuilder.append("Create a concise performance summary based on these probation reviews. ");
-            promptBuilder.append("Structure it in 3 paragraphs without bullet points:\n\n");
+            promptBuilder.append("Create a concise overall performance assessment based on these probation reviews for ")
+                        .append(joinerName).append(" (UID: ").append(joinerId).append("). ");
+            promptBuilder.append("Focus only on the overall assessment (3 paragraphs summarising their probation period).\n\n");
             promptBuilder.append("1. Key strengths (combine all positive feedback into one cohesive paragraph)\n");
             promptBuilder.append("2. Areas for improvement (combine all constructive feedback into one paragraph)\n");
             promptBuilder.append("3. Overall assessment (1-2 sentences summarizing their probation period)\n\n");
+            promptBuilder.append("Be really honest as this review will decide if the New joiner will stay at the company or be let go. This is only for HR.\n\n");
             promptBuilder.append("Do not mention any reviewer names. Keep it professional but concise. Here are the reviews:\n\n");
+            promptBuilder.append("At the end, have a sentence expressing your opinion if the new joine should be kept or should be let go with a reason why\n\n");
 
             for (QueryDocumentSnapshot doc : reviewDocs) {
-                promptBuilder.append("- ").append(doc.getString("review")).append("\n");
+                String reviewText = doc.getString("review");
+                logger.info("Adding review text: " + reviewText);
+                promptBuilder.append("- ").append(reviewText).append("\n");
             }
+
+            String fullPrompt = promptBuilder.toString();
+            logger.info("Final prompt being sent to Gemini:\n" + fullPrompt);
 
             String apiKey = "AIzaSyDsRumg-_huAG-en85c9YFXfAhN03VOnqE";
             String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey;
@@ -1847,7 +1881,7 @@ public class JobPostingController {
             JsonObject content = new JsonObject();
             JsonArray parts = new JsonArray();
             JsonObject part = new JsonObject();
-            part.addProperty("text", promptBuilder.toString());
+            part.addProperty("text", fullPrompt);
             parts.add(part);
             content.add("parts", parts);
             contents.add(content);
@@ -1856,13 +1890,16 @@ public class JobPostingController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
+            logger.info("Sending request to Gemini API");
             HttpEntity<String> entity = new HttpEntity<>(new Gson().toJson(requestBody), headers);
             ResponseEntity<String> response = restTemplate.postForEntity(geminiUrl, entity, String.class);
 
+            logger.info("Received response from Gemini API");
             JsonObject jsonResponse = JsonParser.parseString(response.getBody()).getAsJsonObject();
             JsonArray candidates = jsonResponse.getAsJsonArray("candidates");
             
             if (candidates == null || candidates.size() == 0) {
+                logger.severe("No candidates in Gemini API response");
                 throw new RuntimeException("No response from Gemini API");
             }
 
@@ -1870,20 +1907,26 @@ public class JobPostingController {
             JsonObject contentResponse = candidate.getAsJsonObject("content");
             JsonArray partsResponse = contentResponse.getAsJsonArray("parts");
             String generatedReport = partsResponse.get(0).getAsJsonObject().get("text").getAsString();
+            
+            logger.info("Generated report:\n" + generatedReport);
 
             String reportId = UUID.randomUUID().toString();
             Map<String, Object> reportData = new HashMap<>();
             reportData.put("joinerId", joinerId);
             reportData.put("reportText", generatedReport);
             reportData.put("generatedAt", FieldValue.serverTimestamp());
+            
+            logger.info("Storing report in Firestore with ID: " + reportId);
             firestore.collection("performanceReports").document(reportId).set(reportData);
 
             model.addAttribute("joiner", joiner);
             model.addAttribute("report", generatedReport);
+            
+            logger.info("Successfully generated and stored performance report for " + joinerName);
             return "performance_report";
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error generating performance report", e);
+            logger.log(Level.SEVERE, "Error generating performance report for joinerId: " + joinerId, e);
             model.addAttribute("error", "Failed to generate performance report: " + e.getMessage());
             return "redirect:/viewJoinerReviews?joinerId=" + joinerId;
         }
@@ -1960,18 +2003,15 @@ public class JobPostingController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String hrEmail = authentication.getName();
 
-        // 1. Get all jobs posted by this HR
         List<QueryDocumentSnapshot> hrJobs = firestore.collection("jobPostings")
                 .whereEqualTo("postedBy", hrEmail)
                 .get().get().getDocuments();
         model.addAttribute("hrJobs", hrJobs);
 
-        // Get list of job IDs posted by this HR
         List<String> hrJobIds = hrJobs.stream()
                 .map(DocumentSnapshot::getId)
                 .collect(Collectors.toList());
 
-        // 2. Get applications based on filter and HR's jobs
         List<QueryDocumentSnapshot> applications = new ArrayList<>();
         if (!hrJobIds.isEmpty()) {
             if (jobId != null && !jobId.isEmpty() && hrJobIds.contains(jobId)) {
@@ -1985,7 +2025,6 @@ public class JobPostingController {
             }
         }
 
-        // 3. Get all job titles for the HR
         Map<String, String> jobTitles = hrJobs.stream()
                 .collect(Collectors.toMap(
                     DocumentSnapshot::getId,
@@ -2003,7 +2042,6 @@ public class JobPostingController {
                                                          Map<String, String> jobTitles) {
         Map<String, Object> result = new HashMap<>();
         
-        // 1. Funnel data
         int applied = applications.size();
         int shortlisted = 0;
         int interviewed = 0;
@@ -2016,10 +2054,8 @@ public class JobPostingController {
             String status = app.getString("status");
             if (status == null) status = "Applied";
             
-            // Count statuses for pie chart
             statusCounts.put(status, statusCounts.getOrDefault(status, 0) + 1);
             
-            // Funnel counts
             if (status.equals("Shortlisted")) shortlisted++;
             if (status.equals("Interview Scheduled")) interviewed++;
             if (status.equals("Interview Passed")) interviewed++;
@@ -2033,7 +2069,6 @@ public class JobPostingController {
             "colors", new String[]{"#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"}
         ));
         
-        // 2. Status distribution data
         List<Map<String, Object>> statusData = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
             statusData.add(Map.of(
