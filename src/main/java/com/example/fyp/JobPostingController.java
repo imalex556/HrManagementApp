@@ -1022,16 +1022,16 @@ public class JobPostingController {
                 String emailContent = "We are pleased to invite you for an interview for the position: " + jobTitle + ".\n\n" +
                     "Interview Details:\n" +
                     "Date & Time: " + formattedDate + "\n" +
-                    "Type: " + interviewType + "\n";
+                    "Type: " + interviewType + "." + "\n";
                    
                 
                 if ("In-Person".equals(interviewType)) {
                     emailContent += "Location: " + location + "\n";
                 } else {
-                    emailContent += "Meeting Link: Will be sent to you prior to the interview\n";
+                    emailContent += "Meeting Link: An email will be sent to you prior to the interview\n";
                 }
                 
-                emailContent += "\nPlease confirm your availability by replying to this email.\n\n";
+                emailContent += "\nPlease accept or decline the interview on the app.\n\n";
             
                 emailService.sendEmail(candidateEmail, emailSubject, candidateName, emailContent);
 
@@ -1448,7 +1448,7 @@ public class JobPostingController {
             
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("email", candidateEmail);
-            notificationData.put("message", "You have received a job offer for " + jobTitle);
+            notificationData.put("message", "You have received a job offer for " + jobTitle + ". Please check your email for the offer letter and either decline or accept the job");
             notificationData.put("timestamp", System.currentTimeMillis());
             notificationData.put("type", "offer_received");
             notificationData.put("offerId", offerId);
@@ -2038,46 +2038,65 @@ public class JobPostingController {
     }
 
     private Map<String, Object> processRecruitmentAnalytics(List<QueryDocumentSnapshot> applications, 
-                                                         Map<String, String> jobTitles) {
-        Map<String, Object> result = new HashMap<>();
-        
-        int applied = applications.size();
-        int shortlisted = 0;
-        int interviewed = 0;
-        int offered = 0;
-        int hired = 0;
-        
-        Map<String, Integer> statusCounts = new HashMap<>();
-        
-        for (QueryDocumentSnapshot app : applications) {
-            String status = app.getString("status");
-            if (status == null) status = "Applied";
-            
-            statusCounts.put(status, statusCounts.getOrDefault(status, 0) + 1);
-            
-            if (status.equals("Shortlisted")) shortlisted++;
-            if (status.equals("Interview Scheduled")) interviewed++;
-            if (status.equals("Interview Passed")) interviewed++;
-            if (status.equals("Offer Sent")) offered++;
-            if (status.equals("Offer Accepted")) hired++;
-        }
-        
-        result.put("funnel", Map.of(
-            "labels", new String[]{"Applied", "Shortlisted", "Interviewed", "Offered", "Hired"},
-            "values", new int[]{applied, shortlisted, interviewed, offered, hired},
-            "colors", new String[]{"#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"}
-        ));
-        
-        List<Map<String, Object>> statusData = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
-            statusData.add(Map.of(
-                "name", entry.getKey(),
-                "value", entry.getValue()
-            ));
-        }
-        
-        result.put("statuses", statusData);
-        
-        return result;
-    }
+            Map<String, String> jobTitles) {
+Map<String, Object> result = new HashMap<>();
+
+int applied = 0;
+int shortlisted = 0;
+int interviewed = 0;
+int offered = 0;
+int hired = 0;
+
+Map<String, Integer> statusCounts = new HashMap<>();
+
+List<String> statusHierarchy = Arrays.asList(
+"Applied",
+"Shortlisted",
+"Personality Test",
+"Interview Scheduled",
+"Interview Passed",
+"Interview Failed",
+"Offer Sent",
+"Offer Accepted"
+);
+
+for (QueryDocumentSnapshot app : applications) {
+String currentStatus = app.getString("status");
+if (currentStatus == null) currentStatus = "Applied";
+
+statusCounts.put(currentStatus, statusCounts.getOrDefault(currentStatus, 0) + 1);
+
+int maxStageIndex = statusHierarchy.indexOf("Applied");
+for (String status : statusHierarchy) {
+if (app.contains(status) || status.equals(currentStatus)) {
+int idx = statusHierarchy.indexOf(status);
+if (idx > maxStageIndex) maxStageIndex = idx;
+}
+}
+
+applied++;
+if (maxStageIndex >= 1) shortlisted++;
+if (maxStageIndex >= 3) interviewed++;
+if (maxStageIndex >= 5) offered++;  
+if (maxStageIndex >= 6) hired++; 
+}
+
+result.put("funnel", Map.of(
+"labels", new String[]{"Applied", "Shortlisted", "Interviewed", "Offered", "Hired"},
+"values", new int[]{applied, shortlisted, interviewed, offered, hired},
+"colors", new String[]{"#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"}
+));
+
+List<Map<String, Object>> statusData = new ArrayList<>();
+for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
+statusData.add(Map.of(
+"name", entry.getKey(),
+"value", entry.getValue()
+));
+}
+
+result.put("statuses", statusData);
+
+return result;
+}
 }

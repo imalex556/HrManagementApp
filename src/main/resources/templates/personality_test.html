@@ -10,6 +10,7 @@
             padding: 0;
             color: #333;
         }
+        
         .navbar {
             background-color: #2c3e50;
             padding: 15px;
@@ -18,6 +19,7 @@
             align-items: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        
         .navbar a {
             color: white;
             text-decoration: none;
@@ -25,13 +27,16 @@
             font-weight: 500;
             transition: all 0.3s ease;
         }
+        
         .navbar a:hover {
             color: #5cb85c;
         }
+        
         .dropdown {
             position: relative;
             display: inline-block;
         }
+        
         .dropdown-content {
             display: none;
             position: absolute;
@@ -43,6 +48,7 @@
             border-radius: 8px;
             overflow: hidden;
         }
+        
         .dropdown-content a {
             color: #2c3e50;
             padding: 12px 16px;
@@ -50,13 +56,16 @@
             display: block;
             transition: all 0.3s ease;
         }
+        
         .dropdown-content a:hover {
             background-color: #f1f1f1;
             color: #5cb85c;
         }
+        
         .dropdown:hover .dropdown-content {
             display: block;
         }
+        
         .container {
             max-width: 1200px;
             margin: 40px auto;
@@ -65,93 +74,185 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-        h2 {
+        
+        h1 {
             color: #2c3e50;
             margin-bottom: 30px;
             font-weight: 600;
             border-bottom: 2px solid #5cb85c;
             padding-bottom: 10px;
             display: inline-block;
-            text-align: center;
-            width: 100%;
         }
-        form {
+        
+        .test-instructions {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #5cb85c;
+        }
+        
+        .question-container {
+            margin: 40px 0;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .question-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1);
+        }
+        
+        .question-number {
+            color: #5cb85c;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .question-text {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.05em;
+            line-height: 1.5;
+        }
+        
+        .response-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+        }
+        
+        .response-option {
             display: flex;
             flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: white;
         }
-        .question {
-            margin-bottom: 20px;
+        
+        .response-option:hover {
+            border-color: #5cb85c;
+            background-color: #f8fff8;
         }
-        .question label {
-            display: block;
-            margin-bottom: 10px;
-            color: #555;
+        
+        .response-option input[type="radio"] {
+            margin-bottom: 8px;
+            accent-color: #5cb85c;
         }
-        .response-scale {
-            display: flex;
-            justify-content: space-between;
-        }
-        .response-scale label {
-            flex: 1;
+        
+        .response-label {
             text-align: center;
+            font-size: 0.9em;
+            color: #6c757d;
+            line-height: 1.3;
         }
-        button {
-            background-color: #2c3e50;
+        
+        .submit-btn {
+            background-color: #5cb85c;
             color: white;
-            padding: 12px 24px;
+            padding: 15px 40px;
             border: none;
             border-radius: 25px;
+            font-weight: 600;
+            font-size: 1.1em;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+            width: fit-content;
+            align-self: center;
         }
-        button:hover {
-            background-color: #1a252f;
+        
+        .submit-btn:hover {
+            background-color: #4ca74c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(92,184,92,0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .response-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .question-container {
+                padding: 20px;
+                margin: 25px 0;
+            }
+            
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
         }
     </style>
 </head>
 <body>
-	<div class="navbar">
-	        <a th:href="@{/welcome}">Home</a>
-	        <div class="dropdown">
-	            <a class="dropbtn">Menu</a>
-	            <div class="dropdown-content">
-	                <a th:href="@{/profile}">Profile</a>
-	                <a th:href="@{/notifications}">Notifications</a>
-	                <a th:href="@{/}">Logout</a>
-	            </div>
+    <div class="navbar">
+        <a th:href="@{/welcome}">Home</a>
+        <div class="dropdown">
+            <a class="dropbtn">Menu</a>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}">Profile</a>
+                <a th:href="@{/notifications}">Notifications</a>
+                <a th:href="@{/}">Logout</a>
+            </div>
         </div>
     </div>
+
     <div class="container">
-        <h2>Personality Test</h2>
-        <p>Please answer the following questions to be able to move to the next stage if successful.</p>
+        <h1>Personality Assessment</h1>
+        
+        <div class="test-instructions">
+            <p>Please answer all questions honestly and to the best of your ability. This assessment helps us understand how you might fit within our team culture.</p>
+            <p><strong>Note:</strong> There are no right or wrong answers - we're looking for authentic responses.</p>
+        </div>
+
         <form th:action="@{/submitPersonalityTest}" method="post">
-            <div th:each="question, iterStat : ${questions}" class="question">
-                <label th:for="'question' + ${iterStat.index}" th:text="'Q' + (${iterStat.index + 1}) + '. ' + ${question}"></label>
-                <div class="response-scale">
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="strongly agree" required> Strongly Agree
+            <div th:each="question, iterStat : ${questions}" class="question-container">
+                <div class="question-number">Question [[${iterStat.index + 1}]] of [[${questions.size()}]]</div>
+                <div class="question-text" th:text="${question}"></div>
+                
+                <div class="response-grid">
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="strongly agree" required>
+                        <span class="response-label">Strongly<br>Agree</span>
                     </label>
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="agree"> Agree
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="agree">
+                        <span class="response-label">Agree</span>
                     </label>
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="slightly agree"> Slightly Agree
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="slightly agree">
+                        <span class="response-label">Slightly<br>Agree</span>
                     </label>
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="neutral"> Neutral
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="neutral">
+                        <span class="response-label">Neutral</span>
                     </label>
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="slightly disagree"> Slightly Disagree
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="slightly disagree">
+                        <span class="response-label">Slightly<br>Disagree</span>
                     </label>
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="disagree"> Disagree
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="disagree">
+                        <span class="response-label">Disagree</span>
                     </label>
-                    <label>
-                        <input type="radio" th:id="'question' + ${iterStat.index}" th:name="'question' + ${iterStat.index}" value="strongly disagree"> Strongly Disagree
+                    <label class="response-option">
+                        <input type="radio" th:name="'question' + ${iterStat.index}" value="strongly disagree">
+                        <span class="response-label">Strongly<br>Disagree</span>
                     </label>
                 </div>
             </div>
-            <button type="submit">Submit Test</button>
+
+            <button type="submit" class="submit-btn">Submit Assessment</button>
         </form>
     </div>
 </body>
