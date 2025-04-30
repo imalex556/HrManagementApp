@@ -1268,7 +1268,7 @@ public class JobPostingController {
             for (String jobId : jobIds) {
                 List<QueryDocumentSnapshot> interviews = firestore.collection("interviews")
                         .whereEqualTo("jobId", jobId)
-                        .whereIn("status", Arrays.asList("Offer Sent", "Failed")) // Updated statuses
+                        .whereIn("status", Arrays.asList("Offer Sent", "Failed"))
                         .get().get().getDocuments();
                 
                 for (QueryDocumentSnapshot interview : interviews) {
@@ -1430,12 +1430,11 @@ public class JobPostingController {
             firestore.collection("offers").document(offerId).set(offerData);
             
             String emailSubject = "Job Offer: " + jobTitle;
-            String emailContent = "Dear " + candidateName + ",\n\n" +
+            String emailContent =
                     "Congratulations! We are pleased to offer you the position of " + jobTitle + ".\n\n" +
                     "Please find attached your official offer letter. You can review and respond to this offer " +
                     "directly in the application by accepting or declining the offer.\n\n" +
                     "You have 7 days to respond to this offer.\n\n" +
-                    "Best regards,\n" +
                     "HR Team";
             
             MimeMessage message = mailSender.createMimeMessage();
