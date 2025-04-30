@@ -663,13 +663,13 @@ public class JobPostingController {
         answers.remove("_csrf");
 
         List<String> questions = (List<String>) session.getAttribute("questions");
-        if (questions == null || questions.size() < 1) {
+        if (questions == null || questions.size() < 20) {
             model.addAttribute("error", "Session expired or incomplete test. Please retake the test.");
             return "redirect:/welcome";
         }
 
         List<Map<String, Object>> items = new ArrayList<>();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 20; i++) {
             String responseKey = "question" + i;
             if (answers.containsKey(responseKey)) {
                 String response = answers.get(responseKey).toLowerCase();
@@ -1268,7 +1268,7 @@ public class JobPostingController {
             for (String jobId : jobIds) {
                 List<QueryDocumentSnapshot> interviews = firestore.collection("interviews")
                         .whereEqualTo("jobId", jobId)
-                        .whereIn("status", Arrays.asList("Passed", "Failed"))
+                        .whereIn("status", Arrays.asList("Offer Sent", "Failed")) // Updated statuses
                         .get().get().getDocuments();
                 
                 for (QueryDocumentSnapshot interview : interviews) {

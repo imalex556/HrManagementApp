@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>HR Management App</title>
+    <title>Welcome New Joiner</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -57,7 +57,7 @@
         .loading-bar {
             width: 0;
             height: 4px;
-            background: linear-gradient(90deg, #2c3e50,  #5cb85c);
+            background: linear-gradient(90deg, #2c3e50, #5cb85c);
             margin-top: 30px;
             border-radius: 2px;
             transition: width 2s ease-in-out 0.5s;
@@ -70,8 +70,8 @@
 </head>
 <body>
     <div class="animation-container">
-        <div class="welcome-message">Welcome to HR Management App</div>
-        <div class="subtitle">Streamlining your HR processes</div>
+        <div class="welcome-message">Welcome <span th:text="${name}"></span></div>
+        <div class="subtitle">Redirecting you to the <span th:text="${dashboard}"></span></div>
         <div class="loading-bar"></div>
     </div>
 
@@ -87,7 +87,7 @@
             }, 2000);
 
             setTimeout(() => {
-                window.location.href = '/login';
+                window.location.href = '/welcome_new_joiner';
             }, 3000);
         });
     </script>
