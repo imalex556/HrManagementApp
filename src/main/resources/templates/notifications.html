@@ -113,14 +113,6 @@
 			color: #555;
 		}
 
-		.notification-details {
-			margin-top: 8px;
-			padding: 8px;
-			background-color: #e9ecef;
-			border-radius: 12px;
-			font-size: 0.9em;
-		}
-
 		.notification-actions {
 			display: flex;
 			flex-direction: column;
@@ -182,6 +174,15 @@
 			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 		}
 
+		.notification-actions .mark-read-btn {
+			background-color: #6c757d;
+		}
+
+		.notification-actions .mark-read-btn:hover {
+			background-color: #5a6268;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+		}
+
 	</style>
 </head>
 
@@ -204,22 +205,6 @@
 				class="notification-item">
 				<div class="notification-content">
 					<p th:text="${notification.get('message')}"></p>
-					<div class="notification-details" th:if="${notification.get('type') == 'interview_scheduled'}">
-						<p><strong>Type:</strong> <span th:text="${notification.get('interviewType') ?: 'N/A'}"></span>
-						</p>
-						<p th:if="${notification.get('interviewType') == 'In-Person'}">
-							<strong>Location:</strong> <span
-								th:text="${notification.get('interviewLocation') ?: 'Location not specified'}"></span>
-						</p>
-						<p><strong>Scheduled:</strong> <span
-								th:text="${notification.get('interviewDateTime') ?: 'Date not specified'}"></span></p>
-					</div>
-					<div class="notification-details" th:if="${notification.get('type') == 'personality_test_passed'}">
-						<p><strong>Candidate:</strong> <span
-								th:text="${notification.get('candidateName') ?: 'N/A'}"></span></p>
-						<p><strong>Position:</strong> <span th:text="${notification.get('jobTitle') ?: 'N/A'}"></span>
-						</p>
-					</div>
 				</div>
 				<div class="notification-actions">
 					<div th:if="${notification.get('type') == 'personality_test_passed' 
@@ -248,7 +233,7 @@
 
 					<form th:action="@{/markAsRead}" method="post">
 						<input type="hidden" name="notificationId" th:value="${notification.id}">
-						<button type="submit">Mark Read</button>
+						<button type="submit" class="mark-read-btn">Mark Read</button>
 					</form>
 					<form th:action="@{/deleteNotification}" method="post">
 						<input type="hidden" name="notificationId" th:value="${notification.id}">

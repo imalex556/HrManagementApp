@@ -124,21 +124,33 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.12);
         }
 
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-bottom: 2px solid #5cb85c;
+            padding-bottom: 10px;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+        }
+
     </style>
 </head>
 <body>
-	<div class="navbar">
-	        <a th:href="@{/welcome}">Home</a>
-	        <div class="dropdown">
-	            <a class="dropbtn">Menu</a>
-	            <div class="dropdown-content">
-	                <a th:href="@{/profile}">Profile</a>
-	                <a th:href="@{/notifications}">Notifications</a>
-	                <a th:href="@{/}">Logout</a>
-	            </div>
+    <div class="navbar">
+            <a th:href="@{/welcome}">Home</a>
+            <div class="dropdown">
+                <a class="dropbtn">Menu</a>
+                <div class="dropdown-content">
+                    <a th:href="@{/profile}">Profile</a>
+                    <a th:href="@{/notifications}">Notifications</a>
+                    <a th:href="@{/}">Logout</a>
+                </div>
         </div>
     </div>
     <div class="container">
+        <h1>User Dashboard</h1>
         <div class="options-grid">
             <div class="option-card">
                 <h2 class="option-title">Job Search</h2>
