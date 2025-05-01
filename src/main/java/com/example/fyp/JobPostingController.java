@@ -1,81 +1,45 @@
 package com.example.fyp;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonArray;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.pdf.PdfWriter;
-import org.springframework.core.io.ByteArrayResource;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import com.google.cloud.firestore.FieldValue;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.PdfWriter;
-import org.springframework.core.io.ByteArrayResource;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Collections;
 import com.example.fyp.OfferLetterService;
-import org.springframework.mail.javamail.JavaMailSender;
-import java.time.LocalDateTime;
-import com.itextpdf.text.DocumentException;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpHeaders;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.FieldValue;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import com.google.cloud.firestore.FieldValue;
+
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.cloud.FirestoreClient;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
+
 import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpSession;
-import com.google.cloud.firestore.FieldValue;
-import java.util.stream.Collectors;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+
 import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.BitmapEncoder.BitmapFormat;
 import org.knowm.xchart.PieChart;
 import org.knowm.xchart.PieChartBuilder;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
@@ -84,6 +48,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -103,11 +68,15 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
 
 @Controller
 public class JobPostingController {
@@ -390,28 +359,39 @@ public class JobPostingController {
         }
     }
 
-    private double calculateMatchPercentage(String cvText, String jobDescription) {
-        String[] cvWords = cvText.toLowerCase().split("\\W+");
-        String[] jobWords = jobDescription.toLowerCase().split("\\W+");
+    private static final Set<String> STOP_WORDS = Set.of(
+    	    "a", "an", "the", "and", "or", "but", "if", "while", "with", "of", "at", "by", "for", "to", "in", "on", "as", "is", "are", "was", "were", "be", "been", "being", "has", "have", "had", "do", "does", "did"
+    	);
 
-        Map<String, Integer> cvWordCount = new HashMap<>();
-        for (String word : cvWords) {
-            cvWordCount.put(word, cvWordCount.getOrDefault(word, 0) + 1);
-        }
+    	private double calculateMatchPercentage(String cvText, String jobDescription) {
+    	    String[] cvWords = cvText.toLowerCase().split("\\W+");
+    	    String[] jobWords = jobDescription.toLowerCase().split("\\W+");
 
-        Map<String, Integer> jobWordCount = new HashMap<>();
-        for (String word : jobWords) {
-            jobWordCount.put(word, jobWordCount.getOrDefault(word, 0) + 1);
-        }
+    	    Map<String, Integer> cvWordCount = new HashMap<>();
+    	    for (String word : cvWords) {
+    	        if (!STOP_WORDS.contains(word)) {
+    	            cvWordCount.put(word, cvWordCount.getOrDefault(word, 0) + 1);
+    	        }
+    	    }
 
-        int matchCount = 0;
-        for (String word : jobWordCount.keySet()) {
-            matchCount += Math.min(cvWordCount.getOrDefault(word, 0), jobWordCount.get(word));
-        }
+    	    Map<String, Integer> jobWordCount = new HashMap<>();
+    	    for (String word : jobWords) {
+    	        if (!STOP_WORDS.contains(word)) {
+    	            jobWordCount.put(word, jobWordCount.getOrDefault(word, 0) + 1);
+    	        }
+    	    }
 
-        int totalJobWords = jobWords.length;
-        return (double) matchCount / totalJobWords * 100;
-    }
+    	    int matchCount = 0;
+    	    for (String word : jobWordCount.keySet()) {
+    	        matchCount += Math.min(cvWordCount.getOrDefault(word, 0), jobWordCount.get(word));
+    	    }
+
+    	    int totalJobWords = Arrays.stream(jobWords)
+    	                              .filter(word -> !STOP_WORDS.contains(word))
+    	                              .toArray().length;
+
+    	    return totalJobWords == 0 ? 0 : (double) matchCount / totalJobWords * 100;
+    	}
 
     private void drawPieChart(double matchPercentage, ByteArrayOutputStream outputStream) throws IOException {
         String[] labels = {"Match", "Mismatch"};
@@ -739,7 +719,6 @@ public class JobPostingController {
                 String emailContent = passed ?
                     "We're pleased to inform you that you've passed the personality test for the position: " + jobTitle + ".\n\n" +
                     "Our HR team will contact you shortly regarding the next steps in the hiring process.\n\n" +
-                    "Best regards,\n" +
                     "HR Team" :
                     "Dear " + candidateName + ",\n\n" +
                     "Thank you for completing the personality test for the position: " + jobTitle + ".\n\n" +
@@ -1373,7 +1352,11 @@ public class JobPostingController {
                 
                 if (!applications.isEmpty()) {
                     Map<String, Object> appUpdates = new HashMap<>();
-                    appUpdates.put("status", "Interview " + status);
+                    if ("Passed".equals(status)) {
+                        appUpdates.put("status", "Offer Sent");
+                    } else {
+                        appUpdates.put("status", "Interview " + status);
+                    }
                     firestore.collection("applications").document(applications.get(0).getId()).update(appUpdates).get();
                 }
                 
@@ -2037,66 +2020,83 @@ public class JobPostingController {
         return "recruitment_analytics";
     }
 
-    private Map<String, Object> processRecruitmentAnalytics(List<QueryDocumentSnapshot> applications, 
+    private Map<String, Object> processRecruitmentAnalytics(List<QueryDocumentSnapshot> applications,
             Map<String, String> jobTitles) {
-Map<String, Object> result = new HashMap<>();
 
-int applied = 0;
-int shortlisted = 0;
-int interviewed = 0;
-int offered = 0;
-int hired = 0;
+        Map<String, Object> result = new HashMap<>();
 
-Map<String, Integer> statusCounts = new HashMap<>();
+        int applied = 0;
+        int shortlisted = 0;
+        int interviewed = 0;
+        int offered = 0;
+        int hired = 0;
 
-List<String> statusHierarchy = Arrays.asList(
-"Applied",
-"Shortlisted",
-"Personality Test",
-"Interview Scheduled",
-"Interview Passed",
-"Interview Failed",
-"Offer Sent",
-"Offer Accepted"
-);
+        Map<String, Integer> statusCounts = new HashMap<>();
 
-for (QueryDocumentSnapshot app : applications) {
-String currentStatus = app.getString("status");
-if (currentStatus == null) currentStatus = "Applied";
+        for (QueryDocumentSnapshot app : applications) {
+            String status = app.getString("status");
+            if (status == null) status = "Applied";
 
-statusCounts.put(currentStatus, statusCounts.getOrDefault(currentStatus, 0) + 1);
+            boolean isShortlisted = Boolean.TRUE.equals(app.getBoolean("shortlisted"));
 
-int maxStageIndex = statusHierarchy.indexOf("Applied");
-for (String status : statusHierarchy) {
-if (app.contains(status) || status.equals(currentStatus)) {
-int idx = statusHierarchy.indexOf(status);
-if (idx > maxStageIndex) maxStageIndex = idx;
-}
-}
+            statusCounts.put(status, statusCounts.getOrDefault(status, 0) + 1);
 
-applied++;
-if (maxStageIndex >= 1) shortlisted++;
-if (maxStageIndex >= 3) interviewed++;
-if (maxStageIndex >= 5) offered++;  
-if (maxStageIndex >= 6) hired++; 
-}
+            applied++;
 
-result.put("funnel", Map.of(
-"labels", new String[]{"Applied", "Shortlisted", "Interviewed", "Offered", "Hired"},
-"values", new int[]{applied, shortlisted, interviewed, offered, hired},
-"colors", new String[]{"#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"}
-));
+            switch (status) {
+                case "Offer Accepted":
+                    hired++;
+                    offered++;
+                    interviewed++;
+                    if (isShortlisted) shortlisted++;
+                    break;
+                case "Offer Sent":
+                case "Offer Declined":
+                    offered++;
+                    interviewed++;
+                    if (isShortlisted) shortlisted++;
+                    break;
+                case "Interview Passed":
+                case "Interview Failed":
+                case "Interview Accepted":
+                    interviewed++;
+                    if (isShortlisted) shortlisted++;
+                    break;
+                case "Personality Test":
+                case "Interview Stage":
+                case "Interview Scheduled":
+                    if (isShortlisted) shortlisted++;
+                    break;
+                case "Shortlisted":
+                    if (isShortlisted) shortlisted++;
+                    break;
+                default:
+                    break;
+            }
+        }
 
-List<Map<String, Object>> statusData = new ArrayList<>();
-for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
-statusData.add(Map.of(
-"name", entry.getKey(),
-"value", entry.getValue()
-));
-}
+        double shortlistedPercent = (applied > 0) ? (double) shortlisted / applied * 100 : 0;
+        double interviewedPercent = (applied > 0) ? (double) interviewed / applied * 100 : 0;
+        double offeredPercent = (applied > 0) ? (double) offered / applied * 100 : 0;
+        double hiredPercent = (applied > 0) ? (double) hired / applied * 100 : 0;
 
-result.put("statuses", statusData);
+        result.put("funnel", Map.of(
+            "labels", new String[]{"Applied", "Shortlisted", "Interviewed", "Offered", "Hired"},
+            "values", new int[]{applied, shortlisted, interviewed, offered, hired},
+            "percentages", new double[]{100.0, shortlistedPercent, interviewedPercent, offeredPercent, hiredPercent}, 
+            "colors", new String[]{"#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f"}
+        ));
 
-return result;
-}
+        List<Map<String, Object>> statusData = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
+            statusData.add(Map.of(
+                "name", entry.getKey(),
+                "value", entry.getValue()
+            ));
+        }
+
+        result.put("statuses", statusData);
+        return result;
+    }
+
 }

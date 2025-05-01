@@ -306,71 +306,71 @@
         }
 
 		function drawFunnelChart() {
-		        const margin = {top: 40, right: 30, bottom: 60, left: 60};
-		        const width = 800 - margin.left - margin.right;
-		        const height = 400 - margin.top - margin.bottom;
-		        
-		        d3.select("#funnel-chart").html("");
-		        
-		        const svg = d3.select("#funnel-chart")
-		            .append("svg")
-		            .attr("width", width + margin.left + margin.right)
-		            .attr("height", height + margin.top + margin.bottom)
-		            .append("g")
-		            .attr("transform", `translate(${margin.left},${margin.top})`);
+		    const margin = { top: 40, right: 30, bottom: 60, left: 60 };
+		    const width = 800 - margin.left - margin.right;
+		    const height = 400 - margin.top - margin.bottom;
 
-		        const maxValue = d3.max(recruitmentData.funnel.values);
-		        const funnelWidth = width / recruitmentData.funnel.labels.length;
-		        
-		        recruitmentData.funnel.labels.forEach((label, i) => {
-		            const value = recruitmentData.funnel.values[i];
-		            const segmentHeight = height * (value / (maxValue || 1));
-		            const segmentWidth = funnelWidth * 0.8;
-		            
-		            svg.append("rect")
-		                .attr("x", i * funnelWidth + (funnelWidth - segmentWidth)/2)
-		                .attr("y", height - segmentHeight)
-		                .attr("width", segmentWidth)
-		                .attr("height", segmentHeight)
-		                .attr("fill", recruitmentData.funnel.colors[i])
-		                .on("mouseover", function(event) {
-		                    tooltip.transition()
-		                        .duration(200)
-		                        .style("opacity", .9);
-		                    tooltip.html(`${label}: ${value} candidates`)
-		                        .style("left", (event.pageX + 10) + "px")
-		                        .style("top", (event.pageY - 28) + "px");
-		                })
-		                .on("mouseout", function() {
-		                    tooltip.transition()
-		                        .duration(500)
-		                        .style("opacity", 0);
-		                });
-		                
+		    d3.select("#funnel-chart").html("");
+
+		    const svg = d3.select("#funnel-chart")
+		        .append("svg")
+		        .attr("width", width + margin.left + margin.right)
+		        .attr("height", height + margin.top + margin.bottom)
+		        .append("g")
+		        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+		    const maxValue = d3.max(recruitmentData.funnel.values);
+		    const funnelWidth = width / recruitmentData.funnel.labels.length;
+
+		    recruitmentData.funnel.labels.forEach((label, i) => {
+		        const value = recruitmentData.funnel.values[i];
+		        const percentage = recruitmentData.funnel.percentages[i];
+		        const segmentHeight = height * (value / (maxValue || 1));
+		        const segmentWidth = funnelWidth * 0.8;
+		        const labelWithCount = `${label}: ${value} candidate${value === 1 ? '' : 's'}`;
+
+		        svg.append("rect")
+		            .attr("x", i * funnelWidth + (funnelWidth - segmentWidth) / 2)
+		            .attr("y", height - segmentHeight)
+		            .attr("width", segmentWidth)
+		            .attr("height", segmentHeight)
+		            .attr("fill", recruitmentData.funnel.colors[i])
+		            .on("mouseover", function (event) {
+		                tooltip.transition()
+		                    .duration(200)
+		                    .style("opacity", 0.9);
+		                tooltip.html(labelWithCount)
+		                    .style("left", (event.pageX + 10) + "px")
+		                    .style("top", (event.pageY - 28) + "px");
+		            })
+		            .on("mouseout", function () {
+		                tooltip.transition()
+		                    .duration(500)
+		                    .style("opacity", 0);
+		            });
+
+		        svg.append("text")
+		            .attr("x", i * funnelWidth + (funnelWidth / 2))
+		            .attr("y", height - segmentHeight - 10)
+		            .attr("text-anchor", "middle")
+		            .text(label === "Applied" ? `${label}: ${value}` : `${percentage.toFixed(1)}%`); 
+
+		        if (label !== "Applied") {
 		            svg.append("text")
-		                .attr("x", i * funnelWidth + (funnelWidth/2))
-		                .attr("y", height - segmentHeight - 10)
+		                .attr("x", i * funnelWidth + (funnelWidth / 2))
+		                .attr("y", height - segmentHeight - 30)
 		                .attr("text-anchor", "middle")
 		                .text(`${label}: ${value}`);
-		                
-		            if (i > 0) {
-		                const prevValue = recruitmentData.funnel.values[i-1];
-		                const conversion = prevValue > 0 ? (value / prevValue * 100).toFixed(1) : 0;
-		                svg.append("text")
-		                    .attr("x", i * funnelWidth + (funnelWidth/2))
-		                    .attr("y", height - segmentHeight - 30)
-		                    .attr("text-anchor", "middle")
-		                    .text(`${conversion}%`);
-		            }
-		        });
-		        
-		        svg.append("text")
-		            .attr("x", width / 2)
-		            .attr("y", -10)
-		            .attr("text-anchor", "middle")
-		            .style("font-size", "16px")
-		            .text("");
-		    }
+		        }
+		    });
+
+		    svg.append("text")
+		        .attr("x", width / 2)
+		        .attr("y", -10)
+		        .attr("text-anchor", "middle")
+		        .style("font-size", "16px")
+		        .text("");
+		}
         
         function drawStatusChart() {
             const margin = {top: 40, right: 30, bottom: 60, left: 60};

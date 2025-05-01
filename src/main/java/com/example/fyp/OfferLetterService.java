@@ -47,7 +47,7 @@ public class OfferLetterService {
                          "This letter outlines the terms of your employment.\n\n" +
                          "Position: " + jobTitle + "\n" +
                          "Location: " + jobLocation + "\n" +
-                         "Salary: $" + String.format("%,.2f", salary) + " per year\n\n" +
+                         "Salary: €" + String.format("%,.2f", salary) + " per year\n\n" +
                          "Your employment is expected to begin on " + 
                          LocalDate.now().plusWeeks(2).format(DateTimeFormatter.ofPattern("MMMM dd, yyyy")) + ".\n\n" +
                          "Please review this offer and respond within 7 days.\n\n" +
