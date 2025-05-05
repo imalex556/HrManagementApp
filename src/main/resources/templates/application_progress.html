@@ -184,14 +184,12 @@
                         <p th:if="${app.get('interviewType')}">
                             <strong>Type:</strong> 
                             <span th:text="${app.get('interviewType') == 'In-Person' ? 'In-Person' : 'Online'}"></span>
-                        </p>
-                        <!-- Show location for in-person interviews -->
+                        </p>->
                         <div th:if="${app.get('interviewType') == 'In-Person'}">
                             <p th:if="${app.get('interviewLocation')}">
                                 <strong>Location:</strong> <span th:text="${app.get('interviewLocation')}"></span>
                             </p>
                         </div>
-                        <!-- Show details for online interviews -->
                         <div th:if="${app.get('interviewType') == 'Online'}">
                             <p th:if="${app.get('interviewDetails')}">
                                 <strong>Details:</strong> <span th:text="${app.get('interviewDetails')}"></span>
